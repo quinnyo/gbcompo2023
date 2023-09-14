@@ -1,0 +1,8 @@
+/target/
+/res/
+
+*~
+tools/pyenv/
+__pycache__/
+
+*.tiled-session

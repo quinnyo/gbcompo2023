@@ -6,3 +6,5 @@ tools/pyenv/
 __pycache__/
 
 *.tiled-session
+
+.vscode/

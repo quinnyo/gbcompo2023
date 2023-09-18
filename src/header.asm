@@ -64,6 +64,7 @@ Main::
 	call oam_init
 	call input_init
 	call gfx_load_default_font
+	call gfx_load_default_palettes
 	call Texto_init
 	call settings_init
 	call world_init

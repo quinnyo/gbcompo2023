@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.10.1" orientation="orthogonal" renderorder="right-down" width="22" height="18" tilewidth="8" tileheight="8" infinite="0" nextlayerid="11" nextobjectid="60">
+<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="22" height="18" tilewidth="8" tileheight="8" infinite="0" nextlayerid="11" nextobjectid="60">
  <editorsettings>
   <export format="csv"/>
  </editorsettings>
@@ -48,8 +48,8 @@
 128,128,128,128,128,25,28,128,128,128,128,128,128,128,128,128,42,127,127,127,127,127,
 128,128,128,128,6,127,127,7,128,128,128,128,128,128,128,128,58,127,127,127,127,127,
 128,128,49,55,24,127,127,127,3,3,4,5,128,128,73,34,127,127,127,127,127,127,
-40,39,40,57,24,127,127,127,127,127,127,127,3,3,3,127,127,127,127,127,127,127,
-126,126,126,57,24,127,127,127,127,127,127,127,127,127,127,127,127,127,127,127,127,127
+100,101,114,115,24,127,127,127,127,127,127,127,3,3,3,127,127,127,127,127,127,127,
+128,128,128,9,127,127,127,127,127,127,127,127,127,127,127,127,127,127,127,127,127,127
 </data>
  </layer>
  <objectgroup id="2" name="obj" class="obj">

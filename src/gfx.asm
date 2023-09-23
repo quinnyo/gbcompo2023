@@ -49,9 +49,13 @@ gfx_load_default_palettes::
 	ldh [rOBP1], a
 
 	; CGB
+	xor a
+	ldh [rBCPS], a
 	ld hl, bcp_start
 	ld c, BCP_COUNT * 4
 	call gfx_bcp_load
+	xor a
+	ldh [rOCPS], a
 	ld hl, ocp_start
 	ld c, OCP_COUNT * 4
 	call gfx_ocp_load
@@ -116,8 +120,6 @@ def OCP_BLUEN equ 3     ; Index of OBJ colour palette 'bluen'
 def BCP_EGGPLANT equ 0  ; Index of BG colour palette 'eggplant'
 def BCP_PINKLI equ 1    ; Index of BG colour palette 'pinkli'
 def BCP_BLUEN equ 2     ; Index of BG colour palette 'bluen'
-
-export OCP_GREY, OCP_EGGPLANT, OCP_PINKLI, OCP_BLUEN, BCP_EGGPLANT, BCP_PINKLI, BCP_BLUEN
 
 def OCP_COUNT equ 4
 def BCP_COUNT equ 3

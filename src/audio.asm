@@ -21,6 +21,10 @@ section "audio", rom0
 
 ; Starts the hUGE track at HL
 music_play::
+	ldh a, [hAudioStatus]
+	res AUDIO_STATB_MUSIC, a
+	ldh [hAudioStatus], a
+
 	call hUGE_init
 
 	ldh a, [hAudioStatus]

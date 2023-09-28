@@ -39,12 +39,6 @@ Game::
 	ld d, 0
 	call mem_fill
 
-	ld a, %11100100
-	ldh [rBGP], a
-	ldh [rOBP0], a
-	ld a, %01101100
-	ldh [rOBP1], a
-
 	call gfx_load_game_obj
 	call gfx_load_bg_tiles
 

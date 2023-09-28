@@ -1,3 +1,9 @@
+/******************************************************************************
+This is a (slightly) modified version of hUGEDriver.asm.
+- Added hUGE_set_mute
+- Added hUGE_cut_channels
+******************************************************************************/
+
 include "include/hardware.inc"
 include "include/hUGE.inc"
 
@@ -276,6 +282,37 @@ hUGE_mute_channel::
     ld [mute_channels], a
     and c
     jp nz, note_cut
+    ret
+
+
+;;; Set the channel mute bitmask, cutting notes on muted channels, if any.
+;;; Param: C = Channel mute bitmask (set bit 0,1,2,3 => mute ch 1,2,3,4)
+;;; Destroy: AF, HL, B, D
+hUGE_set_mute::
+    ld a, [mute_channels]
+    ld b, a
+    ld a, $0F
+    and c
+    ld [mute_channels], a
+    xor b
+    and c
+    ret z
+
+    ; cut notes on muted channels
+    ld c, a
+;;; Cut any notes playing on selected channels.
+;;; Param: C = channels to cut (bitmask)
+;;; Destroy: AF, HL, B
+hUGE_cut_channels::
+    ld a, $0F
+    and c
+    ld b, 0
+.loop
+    sra c
+    call c, note_cut
+    inc b
+    sra a
+    jr nz, .loop
     ret
 
 

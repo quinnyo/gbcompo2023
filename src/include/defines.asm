@@ -6,6 +6,10 @@ include "hardware.inc"
 	rev_Check_hardware_inc 4.8
 
 
+/***********************************************************
+*                                                   THINGS *
+***********************************************************/
+
 ; Size of the tilemap in bytes.
 def BGMAP_LEN equ $0400
 
@@ -65,10 +69,18 @@ endc
 endm
 
 
-/**********************************************************
-MODES
-ModeDef
-**********************************************************/
+/***********************************************************
+*                                                    AUDIO *
+***********************************************************/
+
+def AUDIO_STATB_SOUND         equ 6 ; Sound status bit set if sound enabled
+def AUDIO_STATB_MUSIC         equ 7 ; Music status bit set if music enabled
+
+
+/***********************************************************
+*                                                  ModeDef *
+***********************************************************/
+
 def MODES_COUNT = 0 ; Number of defined Modes
 
 ; ModeDef NAME, INIT, MAIN_ITER
@@ -91,8 +103,11 @@ macro ModeDef
 endm
 
 
-/*
-st struct thing usage example:
+/***********************************************************
+*                                             STRUCT THING *
+************************************************************
+
+usage example:
 {{{
 	stdecl Robot
 		stfield status             ; byte by default

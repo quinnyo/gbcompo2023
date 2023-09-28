@@ -1,21 +1,10 @@
-INCLUDE "defines.asm"
-INCLUDE "input.inc"
+include "defines.asm"
+include "input.inc"
 
-SECTION "Splash", ROM0
+section "Splash", rom0
 Splash::
 
 .init::
-	; palettes
-	ld a, %11100100
-	ldh [rBGP], a
-	ldh [rOBP0], a
-	ldh [rOBP1], a
-
-	ld de, TileData
-	ld hl, $9000 - (TileData.end - TileData)
-	ld bc, TileData.end - TileData
-	call vmem_copy
-
 	; load title screen thing
 	ld de, title_tiles
 	ld hl, $8800
@@ -28,18 +17,30 @@ Splash::
 	ld hl, $9800
 	call vmem_copy_rect
 
-
 if def(DEBUG_MODES)
 	call debug_menu_init
 endc
 
+	call audio_on
 	ld hl, mus01
-	call music_init
+	call music_play
+
+	call SusMenu_init
 
 	ret
 
 
 .main_iter::
+	call SusMenu_update
+
+	ld b, SUSDIR_SOUNDTEST
+	ld c, SUSDIST_SOUNDTEST
+	call SusMenu_check
+	jr c, :+
+	ld a, ModeSoundTest
+	jp Main_mode_change
+:
+
 	ld a, [wInput.pressed]
 	and PADF_A | PADF_START
 	jr z, :+
@@ -54,70 +55,88 @@ endc
 	ret
 
 
-TileData:
-	dw `23321011
-	dw `23321011
-	dw `33210112
-	dw `32101123
-	dw `10112332
-	dw `11233210
-	dw `12332101
-	dw `12332101
-
-if !def(DEBUG)
-	dw `00001123
-	dw `10011223
-	dw `11112233
-	dw `21122332
-	dw `21122332
-	dw `11112233
-	dw `10011223
-	dw `10001123
-else
-	dw `11300133
-	dw `13103133
-	dw `13100111
-	dw `13103131
-	dw `11300111
-	dw `22222223
-	dw `23332332
-	dw `32223332
-endc
-
-	dw `00001112
-	dw `00111222
-	dw `01122223
-	dw `11222333
-	dw `12223333
-	dw `12333322
-	dw `11233222
-	dw `01122221
-
-	dw `22232101
-	dw `22321011
-	dw `23210112
-	dw `32101123
-	dw `20112332
-	dw `01223221
-	dw `12332210
-	dw `12222100
-
-	dw `11111111
-	dw `10001000
-	dw `10001000
-	dw `10001000
-	dw `11111111
-	dw `10001000
-	dw `10001000
-	dw `10001000
-.end
-
-title_map_size equ $0168
-title_map_width equ $14
-title_map_height equ $12
+def title_map_size equ $0168
+def title_map_width equ $14
+def title_map_height equ $12
 include "res/title.scrn"
 
 
+/*******************************
+*    (``    (``     |\/|       *
+*    _)UPER _)ECRET |  |ENU    *
+*******************************/
+
+def SUSDIR_SOUNDTEST    equ PADF_UP | PADF_B
+def SUSDIST_SOUNDTEST   equ 3
+
+section "SuperSecretMenu", rom0
+
+SusMenu_init:
+
+SusMenu_reset:
+	xor a
+	ld [wSusMenu.direction], a
+	ld [wSusMenu.steps], a
+	ret
+
+; @mut: AF, B
+SusMenu_update:
+	ld a, [wInput.pressed]
+	and a
+	ret z ; no press event
+
+	ld a, [wInput.state]
+	ld b, a
+
+	ld a, [wSusMenu.direction]
+	and a
+	jr nz, .next_step
+.first_step
+	ld a, b
+	ld [wSusMenu.direction], a
+	ret
+.next_step
+	ld a, [wSusMenu.direction]
+	xor b
+	jr nz, SusMenu_reset ; reset if different buttons down compared to last press
+
+	ld a, [wSusMenu.steps]
+	inc a
+	ld [wSusMenu.steps], a
+
+	ret
+
+
+; Compare current state against a direction and number of steps.
+; If the direction matches, returns the result of `(A=steps) cp c`.
+; @param B: direction to compare against
+; @param C: number of steps required
+; Cy: set if the check failed. Either direction doesn't match,
+;     or set as the result of `cp (steps), C` (value in C > `steps`)
+; Z: set if value in C == `steps`
+SusMenu_check::
+	ld a, [wSusMenu.direction]
+	xor b
+	jr nz, :+
+	ld a, [wSusMenu.steps]
+	cp c
+	ret
+:
+	ccf
+	ret
+
+
+section "SuperSecretMenuState", wram0
+
+; it's super secret
+wSusMenu:
+	.direction: db
+	.steps: db
+
+
+/*************
+* DEBUG TOWN *
+*************/
 if def(DEBUG_MODES)
 
 section "DebugMenu", romx
@@ -195,7 +214,7 @@ debug_menu_text:
 .end
 
 
-SECTION "DebugMenuState", WRAM0
+section "DebugMenuState", wram0
 wMenuFlags: db
 
 endc

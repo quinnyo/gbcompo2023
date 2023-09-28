@@ -8,14 +8,14 @@ SECTION "IRQ_VBlank", ROM0[$0040]
 ; SECTION "IRQ_LCDSTAT", ROM0[$0048]
 ; 	jp ISR_audio_update
 
-SECTION "IRQ_Timer", ROM0[$0050]
-	jp ISR_audio_update
+; SECTION "IRQ_Timer", ROM0[$0050]
+; 	jp ISR_audio_update
 
 ; SECTION "IRQ_Serial", ROM0[$0058]
 ; 	reti
 
-SECTION "IRQ_P1", ROM0[$0060]
-	reti
+; SECTION "IRQ_P1", ROM0[$0060]
+; 	reti
 
 
 SECTION "Header", ROM0[$0100]
@@ -29,6 +29,7 @@ ISR_VBlank:
 	push af
 
 	call hOAMCopyRoutine
+	call audio_update
 
 	ld a, 1
 	ld [wVBlankF], a
@@ -111,14 +112,17 @@ MainLoop:
 
 ; @param A: mode ID
 Main_mode_change::
-	di
 	ld [wMode.current], a
+
+	di
+	xor a
+	ldh [rIF], a
+
 	ld sp, $fffe
 	call audio_init
 	call oam_clear
-	; call lcd_off
 	call Mode_init
-	; call lcd_on
+
 	ei
 	jp MainLoop
 
@@ -185,6 +189,7 @@ section "Mode", rom0
 	ModeDef "Splash", Splash.init, Splash.main_iter
 	ModeDef "Game", Game.init, Game.main_iter
 	ModeDef "LevelSelect", LevelSelect.init, LevelSelect.main_iter
+	ModeDef "SoundTest", SoundTest_init, SoundTest_main_iter
 
 if def(DEBUG_MODES)
 	pushs
@@ -224,89 +229,6 @@ Mode_main_iter::
 section "Mode State", wram0
 wMode::
 	.current:: db ; current mode ID
-
-
-/**********************************************************
-* AUDIO
-**********************************************************/
-section "audio", rom0
-
-def AUDIO_STATB_MUSIC_INIT equ 7
-def AUDIO_STATF_MUSIC_INIT equ %10000000
-
-
-ISR_audio_update:
-	push af
-	ld a, [wAudio.status]
-	bit AUDIO_STATB_MUSIC_INIT, a
-	jr z, .not_initialised
-	push hl
-	push bc
-	push de
-	call hUGE_dosound
-	ld a, [wAudio.timer_modulo]
-	ldh [rTMA], a
-	pop de
-	pop bc
-	pop hl
-.not_initialised ; skip, music not initialised
-	pop af
-	reti
-
-
-; Starts the hUGE track at HL. Playback speed depends on wAudio.timer_modulo.
-music_init::
-	di
-	xor a
-	ldh [rIF], a
-
-	ld a, $80
-	ldh [rAUDENA], a
-	ld a, $FF
-	ldh [rAUDTERM], a
-	ld a, $77
-	ldh [rAUDVOL], a
-
-	call hUGE_init
-
-	ld a, [wAudio.status]
-	set AUDIO_STATB_MUSIC_INIT, a
-	ld [wAudio.status], a
-
-	ld a, [wAudio.timer_modulo]
-	ldh [rTMA], a
-	ld a, 4 ; 4096Hz
-	ldh [rTAC], a
-
-	ldh a, [rIE]
-	set IEB_TIMER, a
-	ldh [rIE], a
-	ei
-
-	ret
-
-
-audio_init::
-	; audio off
-	xor a
-	ldh [rNR52], a
-	ld [wAudio.status], a
-
-	ld a, 60
-	ld [wAudio.timer_modulo], a
-
-	ldh a, [rIE]
-	res IEB_TIMER, a
-	ldh [rIE], a
-
-	ret
-
-
-section "audio_state", wram0
-wAudio::
-	.status:: db
-	; Value for the TMA timer modulo register. Controls playback speed.
-	.timer_modulo:: db
 
 
 /**********************************************************

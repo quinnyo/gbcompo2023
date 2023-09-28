@@ -3,7 +3,7 @@ include "hUGE.inc"
 SECTION "mus01 Song Data", ROMX
 
 mus01::
-db 2
+db 8 ; changed by hand
 dw order_cnt
 dw order1, order2, order3, order4
 dw duty_instruments, wave_instruments, noise_instruments

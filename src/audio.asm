@@ -344,98 +344,151 @@ macro ScEnd
 endm
 
 
-sndA::
-	ScPart CH1, 25
-	ScReg rNR10, 0
-	ScReg rNR11, 24
-	ScReg rNR12, $F0
-	ScReg rNR13, low(854)
-	ScReg rNR14, $C0 | high(854)
+def C3 equ 44
+def C3s equ 156
+def D3 equ 262
+def D3s equ 363
+def E3 equ 457
+def F3 equ 547
+def F3s equ 631
+def G3 equ 710
+def G3s equ 786
+def A3 equ 854
+def A3s equ 923
+def B3 equ 986
+def C4 equ 1046
+def C4s equ 1102
+def D4 equ 1155
+def D4s equ 1205
+def E4 equ 1253
+def F4 equ 1297
+def F4s equ 1339
+def G4 equ 1379
+def G4s equ 1417
+def A4 equ 1452
+def A4s equ 1486
+def B4 equ 1517
+def C5 equ 1546
+def C5s equ 1575
+def D5 equ 1602
+def D5s equ 1627
+def E5 equ 1650
+def F5 equ 1673
+def F5s equ 1694
+def G5 equ 1714
+def G5s equ 1732
+def A5 equ 1750
+def A5s equ 1767
+def B5 equ 1783
+def C6 equ 1798
+def C6s equ 1812
+def D6 equ 1825
+def D6s equ 1837
+def E6 equ 1849
+def F6 equ 1860
+def F6s equ 1871
+def G6 equ 1881
+def G6s equ 1890
+def A6 equ 1899
+def A6s equ 1907
+def B6 equ 1915
+def C7 equ 1923
+def C7s equ 1930
+def D7 equ 1936
+def D7s equ 1943
+def E7 equ 1949
+def F7 equ 1954
+def F7s equ 1959
+def G7 equ 1964
+def G7s equ 1969
+def A7 equ 1974
+def A7s equ 1978
+def B7 equ 1982
+def C8 equ 1985
+def C8s equ 1988
+def D8 equ 1992
+def D8s equ 1995
+def E8 equ 1998
+def F8 equ 2001
+def F8s equ 2004
+def G8 equ 2006
+def G8s equ 2009
+def A8 equ 2011
+def A8s equ 2013
+def B8 equ 2015
+
+
+snd_ui_move::
+	ScPart CH2, 2, :+
+	ScReg rNR21, $80 | 16
+	ScReg rNR22, $A1
+	ScReg rNR23, low(E6)
+	ScReg rNR24, high(E6) | $C0
+	ScEnd
+:
+	ScPart CH2, 5
+	ScReg rNR21, $80 | 16
+	ScReg rNR22, $81
+	ScReg rNR23, low(F6)
+	ScReg rNR24, high(F6) | $C0
 	ScEnd
 
-sndB::
-	ScPart CH1, 25
-	ScReg rNR10, 0
-	ScReg rNR11, 24
-	ScReg rNR12, $F0
-	ScReg rNR13, low(1102)
-	ScReg rNR14, $C0 | high(1102)
+snd_ui_nav_enter::
+	ScPart CH2, 2, :+
+	ScReg rNR21, $80 | 16
+	ScReg rNR22, $A1
+	ScReg rNR23, low(F6s)
+	ScReg rNR24, high(F6s) | $C0
+	ScEnd
+:
+	ScPart CH2, 6, :+
+	ScReg rNR21, $80 | 46
+	ScReg rNR22, $81
+	ScReg rNR23, low(G6)
+	ScReg rNR24, high(G6) | $C0
+	ScEnd
+:
+	ScPart CH2, 2, :+
+	ScReg rNR21, $80 | 16
+	ScReg rNR22, $A1
+	ScReg rNR23, low(G6s)
+	ScReg rNR24, high(G6s) | $C0
+	ScEnd
+:
+	ScPart CH2, 9
+	ScReg rNR21, $80 | 46
+	ScReg rNR22, $81
+	ScReg rNR23, low(A6)
+	ScReg rNR24, high(A6) | $C0
 	ScEnd
 
-sndC::
-	ScPart CH1, 25
-	ScReg rNR10, 0
-	ScReg rNR11, 24
-	ScReg rNR12, $F0
-	ScReg rNR13, low(1253)
-	ScReg rNR14, $C0 | high(1253)
+snd_ui_nav_exit::
+	ScPart CH2, 2, :+
+	ScReg rNR21, $80 | 16
+	ScReg rNR22, $A1
+	ScReg rNR23, low(F6s)
+	ScReg rNR24, high(F6s) | $C0
 	ScEnd
-
-sndD::
-	ScPart CH1 | CH2, 25
-	ScReg rNR10, 0
-	ScReg rNR11, 0
-	ScReg rNR12, $F0
-	ScReg rNR13, low(986)
-	ScReg rNR14, $80 | high(986)
-	ScReg rNR21, 0
-	ScReg rNR22, $F0
-	ScReg rNR23, low(1899)
-	ScReg rNR24, $80 | high(1899)
+:
+	ScPart CH2, 6, :+
+	ScReg rNR21, $80 | 46
+	ScReg rNR22, $81
+	ScReg rNR23, low(G6)
+	ScReg rNR24, high(G6) | $C0
 	ScEnd
-
-sndE::
-	ScPart CH1 | CH2, 25
-	ScReg rNR10, 0
-	ScReg rNR11, 0
-	ScReg rNR12, $F0
-	ScReg rNR13, low(1205)
-	ScReg rNR14, $80 | high(1205)
-	ScReg rNR21, 0
-	ScReg rNR22, $F0
-	ScReg rNR23, low(1930)
-	ScReg rNR24, $80 | high(1930)
+:
+	ScPart CH2, 2, :+
+	ScReg rNR21, $80 | 16
+	ScReg rNR22, $A1
+	ScReg rNR23, low(E6)
+	ScReg rNR24, high(E6) | $C0
 	ScEnd
-
-sndF::
-	ScPart CH1 | CH2, 25
-	ScReg rNR10, 0
-	ScReg rNR11, 0
-	ScReg rNR12, $F0
-	ScReg rNR13, low(1297)
-	ScReg rNR14, $80 | high(1297)
-	ScReg rNR21, 0
-	ScReg rNR22, $F0
-	ScReg rNR23, low(1949)
-	ScReg rNR24, $80 | high(1949)
-	ScEnd
-
-sndBlorp::
-	ScPart CH1 | CH2, 10
-	ScReg rNR11, $C0 | 20
-	ScReg rNR12, $F0
-	ScReg rNR13, low(1899)
-	ScReg rNR14, high(1899) | $80
-	ScReg rNR21, $80 | 24
-	ScReg rNR22, $F0
-	ScReg rNR23, low(1800)
-	ScReg rNR24, high(1800) | $80
-	ScEnd
-
-sndBok::
-	ScPart CH1, 96
-	ScReg rNR11, $80
-	ScReg rNR12, $F0
-	ScReg rNR13, low(427)
-	ScReg rNR14, high(427) | $40 | $80
-	ScEnd
-
-sndTok::
-	ScPart CH1, 44
-	ScReg rNR11, $80
-	ScReg rNR12, $F0
-	ScReg rNR13, low(923)
-	ScReg rNR14, high(923) | $40 | $80
+:
+	ScPart CH2, 9
+	ScReg rNR21, $80 | 46
+	ScReg rNR22, $81
+	ScReg rNR23, low(F6)
+	ScReg rNR24, high(F6) | $C0
 	ScEnd
 
 

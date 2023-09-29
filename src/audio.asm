@@ -21,9 +21,9 @@ section "audio", rom0
 
 ; Starts the hUGE track at HL
 music_play::
-	ldh a, [hAudioStatus]
-	res AUDIO_STATB_MUSIC, a
-	ldh [hAudioStatus], a
+	di
+
+	call music_stop
 
 	call hUGE_init
 
@@ -34,12 +34,15 @@ music_play::
 	xor a
 	ldh [hMusic.mute], a
 
-	ret
+	reti
 
 
 ; Stop music playback (if any).
 music_stop::
 	ldh a, [hAudioStatus]
+	bit AUDIO_STATB_MUSIC, a
+	ret z
+
 	res AUDIO_STATB_MUSIC, a
 	ldh [hAudioStatus], a
 
@@ -69,19 +72,19 @@ audio_init::
 	ld [wAudioVolume], a
 	call sound_init
 
+	call musctl_init
+
 	ret
 
 
+; Turn on the APU and enable audio processing. If the APU is already on, do nothing.
 audio_on::
-	xor a
-	ldh [hAudioStatus], a
-	ldh [hMusic.mute], a
+	ldh a, [rNR52]
+	bit 7, a
+	ret nz
+
 	ld a, $80
 	ldh [rNR52], a
-	ld a, $FF
-	ld [wAudioMixer], a
-	ld a, $77
-	ld [wAudioVolume], a
 
 	ret
 
@@ -100,6 +103,8 @@ audio_update::
 	ldh a, [rNR52]
 	bit 7, a
 	ret z
+
+	call musctl_update
 
 	ld a, [wAudioVolume]
 	ldh [rNR50], a
@@ -257,9 +262,107 @@ sound_update::
 	jp sound_stop
 
 
+/**********************************************************
+***************************** musctl | Music Controller ***
+**********************************************************/
+
+musctl_init::
+	ld a, MUSCTLF_DEFAULT
+	ld [wMusctlCtl], a
+	ld a, $FF
+	ld [wMusctlCurrent], a
+	ld [wMusctlQueue], a
+
+	ret
+
+
+; Play or queue a track from the music table.
+; @param B: music table index
+; @mut: AF, HL
+musctl_play_next::
+	ld a, [wMusctlCurrent]
+	cp $FF
+	jr z, musctl_load ; load new track immediately if nothing loaded
+	cp b
+	ret z ; already playing that ...
+
+	ld a, b
+	ld [wMusctlQueue], a
+
+	ld hl, wMusctlCtl
+	set MUSCTLB_QUEUE_FEED, [hl]
+
+	ret
+
+
+; All stop immediately -- stop playback, unload, reset queue.
+musctl_stop::
+	call music_stop
+	ld a, MUSCTLF_DEFAULT
+	ld [wMusctlCtl], a
+	ld a, $FF
+	ld [wMusctlCurrent], a
+	ld [wMusctlQueue], a
+
+	ret
+
+
+; Load and play a track from the music table.
+; @param B: music table index
+; @mut: AF, D
+musctl_load::
+	ld a, b
+	ld [wMusctlCurrent], a
+	call music_table_lookup
+	ld a, d
+	cp $FF
+	jp c, music_play
+; Stop playback and unload the loaded track
+musctl_unload::
+	call music_stop
+	ld a, $FF
+	ld [wMusctlCurrent], a
+	ret
+
+
+musctl_update::
+	ld a, [wMusctlCtl]
+	bit MUSCTLB_QUEUE_FEED, a
+	jr nz, _musctl_queue_update
+	ret
+
+
+_musctl_queue_update:
+	ld a, [wMusctlQueue]
+	ld b, a
+	ld a, [wMusctlCurrent]
+	cp b
+	jr nz, :+
+	ld a, $FF
+	ld [wMusctlQueue], a
+	ld hl, wMusctlCtl
+	res MUSCTLB_QUEUE_FEED, [hl]
+	ret
+:
+
+	ld a, [wMusctlCurrent]
+	cp $FF
+	jr c, musctl_unload
+
+	ld a, [wMusctlQueue]
+	ld b, a
+	cp $FF
+	jr c, musctl_load
+	ret
+
+
 section "wAudio", wram0
 wAudioVolume:: db ; Master volume & balance as in NR50
 wAudioMixer:: db ; Channel mixer as in NR51
+
+wMusctlCtl:: db      ; Music Player control flags
+wMusctlCurrent:: db  ; music table index of active/playing track
+wMusctlQueue:: db    ; music table index of track to play next (if any)
 
 
 section "hAudio", hram
@@ -278,7 +381,7 @@ hSound::
 section "Sounds", romx
 
 /**********************************************************
-* SoundCode
+******************** SoundCode | Sound Definition Thing ***
 **********************************************************/
 
 def SCSTAT_SND  equ 1 ; sound definition started
@@ -492,6 +595,12 @@ snd_ui_nav_exit::
 	ScEnd
 
 
+section "Audio Resource Tables", rom0
+
+/**********************************************************
+******************************************* Sound Table ***
+**********************************************************/
+
 ; The number of sounds defined in the sound table
 sound_table_size:: db SND_COUNT
 ; The sound table
@@ -499,3 +608,67 @@ sound_table::
 for I, SND_COUNT
 	dw _snd_{u:I}
 endr
+
+
+/**********************************************************
+******************************************* Music Table ***
+**********************************************************/
+
+def MUSIC_TABLE_COLUMN_COUNT equ 2
+def MUSIC_TABLE_COLUMN_WIDTH_0 equ 1
+def MUSIC_TABLE_COLUMN_WIDTH_1 equ 2
+def MUSIC_TABLE_SIZE equ 2
+
+music_table::
+	; number of records (rows) in the table
+	.size:: db MUSIC_TABLE_SIZE
+	.columns:: dw .col0, .col1
+	.col0:
+	db bank(mus01)
+	db bank(mus99)
+	.col1:
+	dw mus01
+	dw mus99
+
+
+; Look up music table record by index.
+; Does bounds check, will return D==$FF on failure.
+; @param B: index
+; @ret D: bank[index] -- bank containing music data
+; @ret HL: address[index] -- address of music data
+music_table_lookup::
+	; check out of bounds
+	ld d, $FF
+	ld a, [music_table.size]
+	ld l, a
+	ld a, b
+	cp l
+	ret nc
+
+	; bank (stride: 1)
+	ld hl, music_table.col0
+	add l
+	ld l, a
+	adc h
+	sub l
+	ld h, a
+	ld d, [hl] ; D = bank
+
+	ld a, b
+	; addr (stride: 2)
+	ld hl, music_table.col1
+	sla a
+	jr nc, :+
+	inc h
+:
+	add l
+	ld l, a
+	adc h
+	sub l
+	ld h, a
+
+	ld a, [hl+]
+	ld h, [hl]
+	ld l, a ; HL = addr
+
+	ret

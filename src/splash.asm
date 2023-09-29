@@ -21,9 +21,8 @@ if def(DEBUG_MODES)
 	call debug_menu_init
 endc
 
-	call audio_on
-	ld hl, mus01
-	call music_play
+	ld b, 0
+	call musctl_play_next
 
 	call SusMenu_init
 

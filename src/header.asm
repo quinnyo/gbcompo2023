@@ -61,6 +61,7 @@ Main::
 	ld sp, $fffe
 
 	call audio_init
+	call audio_on
 	call lcd_off
 	call oam_init
 	call input_init
@@ -119,7 +120,6 @@ Main_mode_change::
 	ldh [rIF], a
 
 	ld sp, $fffe
-	call audio_init
 	call oam_clear
 	call Mode_init
 

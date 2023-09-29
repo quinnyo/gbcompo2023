@@ -35,6 +35,9 @@ LevelSelect.init::
 	call LevelSelect_refresh1
 	call LevelSelect_draw
 
+	ld b, 1
+	call musctl_play_next
+
 	ret
 
 
@@ -75,6 +78,8 @@ LevelSelect.main_iter::
 	cp d ; check index changed
 	jr z, :+
 	ld [wSettings.level], a
+	ld hl, snd_ui_move
+	call sound_play
 	call LevelSelect_refresh0
 	call LevelSelect_refresh1
 	call LevelSelect_draw

@@ -76,6 +76,10 @@ endm
 def AUDIO_STATB_SOUND         equ 6 ; Sound status bit set if sound enabled
 def AUDIO_STATB_MUSIC         equ 7 ; Music status bit set if music enabled
 
+def MUSCTLB_QUEUE_FEED        equ 7 ; set when feeding from the queue
+
+def MUSCTLF_DEFAULT           equ %0000_0000
+
 
 /***********************************************************
 *                                                  ModeDef *

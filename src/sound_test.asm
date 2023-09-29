@@ -29,11 +29,11 @@ SoundTest_init::
 
 	xor a
 	ld [wSelection], a
+	ld [wMusSelection], a
 	ldh [rSCX], a
 	ldh [rSCY], a
 
-	call audio_on
-	call music_stop
+	call musctl_stop
 
 	ret
 
@@ -120,17 +120,28 @@ trig_music:
 	ldh a, [hAudioStatus]
 	bit AUDIO_STATB_MUSIC, a
 	jr z, :+
-	call music_stop
+	ld b, $FF
+	call musctl_play_next
 	ret
 :
 
-	ld hl, mus99
-	call music_play
+	ld a, [music_table.size]
+	ld c, a
+	ld a, [wMusSelection]
+	inc a
+	cp c
+	jr c, :+
+	xor a
+:
+	ld [wMusSelection], a
+	ld b, a
+	call musctl_play_next
 	ret
 
 
 section "SoundTest State", wramx
 wSelection: db
+wMusSelection: db
 
 
 section "SoundTest Data", romx

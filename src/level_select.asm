@@ -1,4 +1,5 @@
 include "defines.asm"
+include "mus.inc"
 
 
 def HEADING_LINES equ 2
@@ -35,7 +36,7 @@ LevelSelect.init::
 	call LevelSelect_refresh1
 	call LevelSelect_draw
 
-	ld b, 1
+	ld b, MUSIC_TRACK_MUS99_INDEX
 	call musctl_play_next
 
 	ret

@@ -614,21 +614,31 @@ endr
 ******************************************* Music Table ***
 **********************************************************/
 
-def MUSIC_TABLE_COLUMN_COUNT equ 2
-def MUSIC_TABLE_COLUMN_WIDTH_0 equ 1
-def MUSIC_TABLE_COLUMN_WIDTH_1 equ 2
-def MUSIC_TABLE_SIZE equ 2
+
+include "mus.inc"
 
 music_table::
-	; number of records (rows) in the table
-	.size:: db MUSIC_TABLE_SIZE
-	.columns:: dw .col0, .col1
-	.col0:
-	db bank(mus01)
-	db bank(mus99)
-	.col1:
-	dw mus01
-	dw mus99
+	MusicTableBuild
+
+
+; Look up music table record by index.
+; @param B: index
+; @ret HL: address[index] -- address of record in music table
+music_table_at_index::
+	ld hl, music_table
+	assert MUSIC_TABLE_STRIDE == 3
+	; multiply by 3
+	ld d, 0
+	ld a, b
+	sla a
+	rl d
+	add b
+	jr nc, :+
+	inc d
+:
+	ld e, a
+	add hl, de
+	ret
 
 
 ; Look up music table record by index.
@@ -645,30 +655,11 @@ music_table_lookup::
 	cp l
 	ret nc
 
-	; bank (stride: 1)
-	ld hl, music_table.col0
-	add l
-	ld l, a
-	adc h
-	sub l
-	ld h, a
-	ld d, [hl] ; D = bank
-
-	ld a, b
-	; addr (stride: 2)
-	ld hl, music_table.col1
-	sla a
-	jr nc, :+
-	inc h
-:
-	add l
-	ld l, a
-	adc h
-	sub l
-	ld h, a
-
+	call music_table_at_index
+	ld a, [hl+]
+	ld d, a
 	ld a, [hl+]
 	ld h, [hl]
-	ld l, a ; HL = addr
+	ld l, a
 
 	ret

@@ -1,5 +1,6 @@
 include "defines.asm"
 include "input.inc"
+include "mus.inc"
 
 section "Splash", rom0
 Splash::
@@ -21,7 +22,7 @@ if def(DEBUG_MODES)
 	call debug_menu_init
 endc
 
-	ld b, 0
+	ld b, MUSIC_TRACK_MUS01_INDEX
 	call musctl_play_next
 
 	call SusMenu_init

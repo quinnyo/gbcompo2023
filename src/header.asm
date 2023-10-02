@@ -27,6 +27,9 @@ SECTION "Header", ROM0[$0100]
 SECTION "ISR", ROM0
 ISR_VBlank:
 	push af
+	push bc
+	push de
+	push hl
 
 	call hOAMCopyRoutine
 	call audio_update
@@ -34,6 +37,9 @@ ISR_VBlank:
 	ld a, 1
 	ld [wVBlankF], a
 
+	pop hl
+	pop de
+	pop bc
 	pop af
 	reti
 

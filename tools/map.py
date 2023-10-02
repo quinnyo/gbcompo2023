@@ -2,8 +2,8 @@
 
 import os
 import sys
-from pathlib import Path
 from argparse import ArgumentParser
+from pathlib import Path
 from math import floor
 
 import pytiled_parser
@@ -41,7 +41,7 @@ OAM_PAL_COL = 0x07
 
 
 LOG_LEVEL_VERBOSE = -1
-log_level = LOG_LEVEL_VERBOSE
+log_level = 0
 
 
 def logv(*values: object, sep: str = " "):
@@ -58,7 +58,6 @@ class Map:
         self.tiles = {}
         self.tee_x = 0
         self.tee_y = 0
-        pass
 
     def process_tmx(self, tmx: TiledMap):
         map_name, _ext = os.path.splitext(tmx.map_file.name)
@@ -94,7 +93,7 @@ class Map:
                 self.fg_firstgid = tileset.firstgid
                 self.tileset_fg = tileset
             else:
-                logwarn(f"unrecognised tileset <{tileset.class_}|{tileset.name}> with {PROP_TILESET}: '{tileset.properties[PROP_TILESET]}'")
+                logv(f"unrecognised tileset <{tileset.class_}|{tileset.name}> with {PROP_TILESET}: '{tileset.properties[PROP_TILESET]}'")
                 return
         else:
             logv(f"skipping tileset <{tileset.class_}|{tileset.name}> with no {PROP_TILESET} property.")
@@ -159,7 +158,7 @@ class Map:
                         gid &= MASK_GID
                         self.tilemap[cy][cx] = gid
         else:
-            logwarn(f"unrecognised layer '<{layer.class_}|{layer.name}>")
+            logv(f"unrecognised layer '<{layer.class_}|{layer.name}>")
 
     def build_heightmap(self, points):
         """
@@ -330,4 +329,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

@@ -1,5 +1,30 @@
-
 INCLUDE "defines.asm"
+
+section "rst_jump_switch", rom0[$08]
+; Jump into address table immediately following callsite.
+; @param A: index
+jump_switch::
+	pop hl ; return addr at callsite (jump_table[0])
+	; table offset
+	add a, l
+	jr nc, :+
+	inc h
+:
+	ld l, a
+	; jump to stored address
+	ld a, [hl+]
+	ld h, [hl]
+	ld l, a
+	jp hl
+
+
+section "rst_rom_sel", rom0[$18]
+; Select ROMX bank.
+; @param A: bank number to swap to
+rom_sel::
+	ldh [hActiveROM], a
+	ld [rROMB0], a
+	ret
 
 
 SECTION "IRQ_VBlank", ROM0[$0040]
@@ -35,7 +60,7 @@ ISR_VBlank:
 	call audio_update
 
 	ld a, 1
-	ld [wVBlankF], a
+	ldh [hVBlankF], a
 
 	pop hl
 	pop de
@@ -49,20 +74,18 @@ ISR_VBlank:
 **********************************************************/
 SECTION "Main", ROM0
 Reset::
-	di
-
 EntryPoint:
+	di
 	xor a
-	ld [wVBlankF], a
+	ldh [hVBlankF], a
+	ld a, 1
+	ldh [hActiveROM], a
 
 	ld a, IEF_VBLANK
 	ldh [rIE], a
 
 	ld a, ModeSplash
 	ld [wMode.current], a
-
-Main::
-	di
 
 	ld sp, $fffe
 
@@ -89,7 +112,7 @@ Main::
 
 	ei
 	xor a
-	ld [wVBlankF], a
+	ld [hVBlankF], a
 	jr MainLoop.vblank_wait
 
 MainLoop:
@@ -108,11 +131,11 @@ MainLoop:
 	nop
 .vblank_wait_entry
 	; wait for vblank interrupt
-	ld a, [wVBlankF]
+	ld a, [hVBlankF]
 	and a
 	jr z, .vblank_wait
 	xor a
-	ld [wVBlankF], a
+	ld [hVBlankF], a
 
 	jr MainLoop
 
@@ -162,28 +185,9 @@ wait_vblank::
 include "mem.inc"
 
 
-section "Main_State", wram0
-; VBlank completion flag
-wVBlankF:: db
-
-
-/**********************************************************
-* JUMP TABLE THINGER
-**********************************************************/
-section "rst08", rom0[$08]
-jump_switch::
-	pop hl ; return addr at callsite (jump_table[0])
-	; table offset
-	add a, l
-	jr nc, :+
-	inc h
-:
-	ld l, a
-
-	ld a, [hl+]
-	ld h, [hl]
-	ld l, a
-	jp hl
+section "Main_State", hram
+hVBlankF:: db ; VBlank completion flag
+hActiveROM:: db ; Selected ROMX bank number
 
 
 /**********************************************************

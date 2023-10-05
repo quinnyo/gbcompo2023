@@ -65,7 +65,7 @@ endc
 
 
 .main_iter::
-	call modal_update
+	call update
 
 if def(DEBUG_BALL)
 	call Ball_dbg_update
@@ -80,7 +80,7 @@ endc
 	ret
 
 
-modal_update:
+update:
 	; update active modal prompt (if any)
 	ld a, [wInput.pressed]
 	ld b, a
@@ -91,10 +91,11 @@ modal_update:
 	jr nz, .modal_shot_ended
 	bit bStatusPaused, a
 	jr nz, .modal_paused
-	jr .modal_default
+	jr .modal_none
 
 .modal_clear
 	bit PADB_A, b
+	jr z, .tick ; wait till A pressed
 	ld a, [wSettings.level]
 	inc a
 	ld [wSettings.level], a
@@ -113,10 +114,15 @@ modal_update:
 	jp Main_mode_change
 :
 
-.modal_default
+	bit PADB_START, b
+	ret z
+	jp pause_toggle
+
+.modal_none
 	bit PADB_START, b
 	jp nz, pause_toggle
 
+.tick
 	; game timers
 	ld a, [wGame.tick1]
 	inc a

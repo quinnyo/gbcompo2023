@@ -1,4 +1,4 @@
-INCLUDE "defines.asm"
+include "defines.asm"
 
 section "rst_jump_switch", rom0[$08]
 ; Jump into address table immediately following callsite.
@@ -27,29 +27,29 @@ rom_sel::
 	ret
 
 
-SECTION "IRQ_VBlank", ROM0[$0040]
+section "IRQ_VBlank", rom0[$0040]
 	jp ISR_VBlank
 
-; SECTION "IRQ_LCDSTAT", ROM0[$0048]
+; section "IRQ_LCDSTAT", rom0[$0048]
 ; 	jp ISR_audio_update
 
-; SECTION "IRQ_Timer", ROM0[$0050]
+; section "IRQ_Timer", rom0[$0050]
 ; 	jp ISR_audio_update
 
-; SECTION "IRQ_Serial", ROM0[$0058]
+; section "IRQ_Serial", rom0[$0058]
 ; 	reti
 
-; SECTION "IRQ_P1", ROM0[$0060]
+; section "IRQ_P1", rom0[$0060]
 ; 	reti
 
 
-SECTION "Header", ROM0[$0100]
+section "Header", rom0[$0100]
 	nop
 	jp EntryPoint
 	ds $150 - @, 0
 
 
-SECTION "ISR", ROM0
+section "ISR", rom0
 ISR_VBlank:
 	push af
 	push bc
@@ -72,7 +72,7 @@ ISR_VBlank:
 /**********************************************************
 * MAIN
 **********************************************************/
-SECTION "Main", ROM0
+section "Main", rom0
 Reset::
 EntryPoint:
 	di
@@ -87,7 +87,7 @@ EntryPoint:
 	ld a, ModeSplash
 	ld [wMode.current], a
 
-	ld sp, $fffe
+	ld sp, $FFFE
 
 	call audio_init
 	call audio_on
@@ -148,7 +148,7 @@ Main_mode_change::
 	xor a
 	ldh [rIF], a
 
-	ld sp, $fffe
+	ld sp, $FFFE
 	call oam_clear
 	call Mode_init
 

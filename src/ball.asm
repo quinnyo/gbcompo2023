@@ -100,38 +100,9 @@ sprite_Ball_D_f0:
 ;* Ball State (WRAM)
 ;*********************************************************************
 
-section "Ball_State", wramx
+section "Ball_State", wram0
 
-wBall::
-	; Overall state/mode (see bMode* constants)
-	.mode:: db
-
-	.status:: db
-	.collide: db
-	.shot:: db
-	.stationary: db ; count consecutive frames with no motion
-
-	; X position
-	.x:: db
-	; X position, fractional/subpixel part
-	.xs: db
-	; Y position
-	.y:: db
-	; Y position, fractional/subpixel part
-	.ys: db
-
-	; X velocity
-	.vx: db
-	; X velocity, fractional/subpixel part
-	.vxs: db
-	; Y velocity
-	.vy: db
-	; Y velocity, fractional/subpixel part
-	.vys: db
-
-	; active sprite address
-	.sprite: dw
-.end
+	st Ball, wBall
 
 wShot::
 	.count:: db
@@ -151,14 +122,14 @@ BallDefault:
 	.collide: db 0
 	.shot: db 0
 	.stationary: db 0
-	.x: db BALL_AIMING_XPOS, 0
-	.y: db BALL_AIMING_YPOS, 0
-	.vx: db 0, 0
-	.vy: db 0, 0
+	.x: dw BALL_AIMING_XPOS
+	.y: dw BALL_AIMING_YPOS
+	.vx: dw 0
+	.vy: dw 0
 	.sprite: dw sprite_Ball_A_f0
 .end
 
-assert (BallDefault.end - BallDefault) == (wBall.end - wBall)
+assert (BallDefault.end - BallDefault) == Ball_sz
 
 
 ;*********************************************************************
@@ -183,7 +154,7 @@ Ball_init::
 ; Reset ball (to tee) and start aiming next shot.
 Ball_reset::
 	ld de, BallDefault
-	ld bc, BallDefault.end - BallDefault
+	ld bc, Ball_sz
 	ld hl, wBall
 	call mem_copy
 
@@ -196,9 +167,9 @@ Ball_reset::
 	or b
 	jr z, :+
 	ld a, b
-	ld [wBall.x], a
+	ld [wBall.x + 1], a
 	ld a, c
-	ld [wBall.y], a
+	ld [wBall.y + 1], a
 :
 
 	ld a, [wShot.count]
@@ -218,9 +189,9 @@ Ball_process::
 	ld a, [wBall.status]
 	bit bBallStatOOB, a
 	jr nz, .skip_oob
-	ld a, [wBall.x]
+	ld a, [wBall.x + 1]
 	ld b, a
-	ld a, [wBall.y]
+	ld a, [wBall.y + 1]
 	ld c, a
 
 	; if off screen top, don't check BOTTOM bound
@@ -290,9 +261,9 @@ aiming_update:
 	ld hl, BallMinLaunchVelX
 	add hl, de
 	ld a, h
-	ld [wBall.vx], a
+	ld [wBall.vx + 1], a
 	ld a, l
-	ld [wBall.vxs], a
+	ld [wBall.vx], a
 
 	ld a, [wAim.y]
 	cpl
@@ -303,9 +274,9 @@ aiming_update:
 	ld hl, BallMinLaunchVelY + 1
 	add hl, de
 	ld a, h
-	ld [wBall.vy], a
+	ld [wBall.vy + 1], a
 	ld a, l
-	ld [wBall.vys], a
+	ld [wBall.vy], a
 
 
 aiming_display:
@@ -317,10 +288,10 @@ aiming_display:
 	ld d, a
 	ld a, [wAim.y]
 	ld e, a
-	ld a, [wBall.x]
+	ld a, [wBall.x + 1]
 	add OAM_X_OFS - 4
 	ld b, a
-	ld a, [wBall.y]
+	ld a, [wBall.y + 1]
 	add OAM_Y_OFS - 4
 	ld c, a
 
@@ -450,58 +421,15 @@ mode_aiming_out:
 /*
 *	MODE: MOTION
 */
-; @in HL: address of 16 bit velocity component
-; @out BC: velocity value
-update_velocity:
-	ld a, [hl+]
-	ld b, a
-	ld c, [hl]
-
-	; only do drag things if velocity is non-zero
-	or c
-	ret z
-
-	; some dodgy drag-like thing
-	ld a, b
-	; sla a
-	subrrsa bc
-
-	; TODO: limit max speed ?
-	; TODO: zero velocity towards collision ?
-	; TODO: some bounce thing/s???
-
-	ld a, c
-	ld [hl-], a
-	ld [hl], b
-
-	ret
-
-
-; @in  BC: velocity
-; @in  HL: address of 16 bit position component
-; @smashes: D
-update_position:
-	ld a, [hl+]
-	ld d, a
-	ld a, [hl]
-	add c
-	ld [hl-], a
-
-	ld a, d
-	adc b
-	ld [hl+], a
-
-	ret
-
 
 ; Check collision with terrain heightmap and update collision status bits.
 ; @ret D: CollideTerrain flags
 ; @mut: A, B, C, H, L
 collide_terrain:
 	ld d, 0
-	ld a, [wBall.x]
+	ld a, [wBall.x + 1]
 	ld b, a
-	ld a, [wBall.y]
+	ld a, [wBall.y + 1]
 	ld c, a
 	call world_get_terrain_column
 	ld a, [hl]
@@ -543,7 +471,7 @@ update_offscreen:
 	jr z, .onscr
 .offscr
 	; check if still off screen
-	ld a, [wBall.y]
+	ld a, [wBall.y + 1]
 	cp 144
 	ret nc ; !(pY < 144)
 	res bBallStatOffScrTop, e
@@ -552,7 +480,7 @@ update_offscreen:
 	; Check if going off screen top -- going up && !(pY < 144)
 	bit bBallStatHeadingY, e
 	ret z ; not going up
-	ld a, [wBall.y]
+	ld a, [wBall.y + 1]
 	cp 144
 	ret c ; pY < 144
 	set bBallStatOffScrTop, e
@@ -567,17 +495,15 @@ motion_step:
 	and 255 - fBallStatHeading ; Clear heading X/Y status
 	ld e, a
 
+.update_vel_x
+	ld hl, wBall + Ball_vx
+	ld a, [hl+]
+	ld c, a
+	ld b, [hl]
+
 	; Side/wall collision velocity adjustments
 	ld a, [wBall.collide]
 	ld d, a
-	and fCollideTerrainLeft | fCollideTerrainRight
-	jr z, .update_vel_x
-	
-	ld a, [wBall.vx]
-	ld b, a
-	ld a, [wBall.vxs]
-	ld c, a
-
 	; 'nudge' away from colliding wall
 	xor a
 	bit bCollideTerrainLeft, d
@@ -588,55 +514,89 @@ motion_step:
 	jr z, :+
 	sub SlideNudgeX
 :
-
 	and a
 	jr z, :+
 	addrrsa bc
 :
 
+	; only do drag and move if velocity is non-zero
 	ld a, b
-	ld [wBall.vx], a
-	ld a, c
-	ld [wBall.vxs], a
+	or c
+	jr z, .save_vel_x
 
-.update_vel_x
-	ld hl, wBall.vx
-	call update_velocity
+	; some dodgy drag-like thing
+	ld a, b
+	subrrsa bc
+
+.update_pos_x
+	ld hl, wBall + Ball_x
+	ld a, [hl]
+	add c
+	ld [hl+], a
+	ld a, [hl]
+	adc b
+	ld [hl], a
+
+.save_vel_x
 	; update heading X status
 	bit 7, b
 	jr z, :+
 	set bBallStatHeadingX, e
 :
-	ld hl, wBall.x
-	call update_position
 
+	ld hl, wBall + Ball_vx
+	ld a, c
+	ld [hl+], a
+	ld [hl], b
+
+
+.update_vel_y
+	ld hl, wBall + Ball_vy
+	ld a, [hl+]
+	ld c, a
+	ld b, [hl]
 
 	; gravity, if not colliding floor
-	ld a, [wBall.collide]
-	and fCollideTerrainDown
+	bit bCollideTerrainDown, d
 	jr nz, .gravity_done
-	ld a, [wBall.vy]
-	ld b, a
-	ld a, [wBall.vys]
-	ld c, a
+
 	ld a, BALL_DEFAULT_GRAVITY
 	addrrsa bc
-	ld a, c
-	ld [wBall.vys], a
-	ld a, b
-	ld [wBall.vy], a
 .gravity_done
 
-	ld hl, wBall.vy
-	call update_velocity
+	; only do drag and move if velocity is non-zero
+	ld a, b
+	or c
+	jr z, .save_vel_y
+
+	; some dodgy drag-like thing
+	ld a, b
+	subrrsa bc
+
+.update_pos_y
+	ld hl, wBall + Ball_y
+	ld a, [hl]
+	add c
+	ld [hl+], a
+	ld a, [hl]
+	adc b
+	ld [hl], a
+
+.save_vel_y
 	; update heading Y status
 	bit 7, b
 	jr z, :+
 	set bBallStatHeadingY, e
 :
-	ld hl, wBall.y
-	call update_position
 
+	ld hl, wBall + Ball_vy
+	ld a, c
+	ld [hl+], a
+	ld [hl], b
+
+
+; update 'peaked' status & sprite
+.update_peaked
 	call update_offscreen
 
 	; check Y velocity peaked
@@ -668,20 +628,20 @@ motion_step:
 	; slow down if colliding terrain
 	bit bCollideTerrainDown, d
 	jr z, :+
-	ld a, [wBall.vy]
+	ld a, [wBall.vy + 1]
 	sra a
-	ld [wBall.vy], a
-	ld a, [wBall.vys]
+	ld [wBall.vy + 1], a
+	ld a, [wBall.vy]
 	rra
-	ld [wBall.vys], a
+	ld [wBall.vy], a
 
 	; "friction"
-	ld a, [wBall.vx]
+	ld a, [wBall.vx + 1]
 	sra a
-	ld [wBall.vx], a
-	ld a, [wBall.vxs]
+	ld [wBall.vx + 1], a
+	ld a, [wBall.vx]
 	rra
-	ld [wBall.vxs], a
+	ld [wBall.vx], a
 :
 
 .no_collide
@@ -700,10 +660,10 @@ motion_step:
 ; @mut: A
 check_stationary:
 	ld e, 0
-	ld a, [wBall.x]
+	ld a, [wBall.x + 1]
 	cp b
 	ret nz
-	ld a, [wBall.y]
+	ld a, [wBall.y + 1]
 	cp c
 	ret nz
 
@@ -721,9 +681,9 @@ mode_motion:
 	jr nz, mode_motion_draw
 
 	; push MSB position to the stack before moving
-	ld a, [wBall.x]
+	ld a, [wBall.x + 1]
 	ld b, a
-	ld a, [wBall.y]
+	ld a, [wBall.y + 1]
 	ld c, a
 	push bc
 
@@ -800,41 +760,19 @@ mode_none:
 
 ; HL: OAM buffer address
 draw_ball:
-	ld a, [wBall.x]
+	ld a, [wBall.x + 1]
 	ld b, a
-	ld a, [wBall.y]
+	ld a, [wBall.y + 1]
 	ld c, a
 
 	ld a, [wBall.sprite]
 	ld e, a
-	ld a, [wBall.sprite+1]
+	ld a, [wBall.sprite + 1]
 	ld d, a
 	jp draw_parts
 
 
 Ball_debug::
-	; Xx Yy
-	ld hl, $9800 + 15
-	ld a, [wBall.x]
-	call hexit_print_byte
-	inc hl
-	ld a, [wBall.y]
-	call hexit_print_byte
-
-	; vXXxx YYyy
-	ld hl, $9800 + 32 + 10
-	ld a, "v"
-	ld [hl+], a
-	ld a, [wBall.vx]
-	call hexit_print_byte
-	ld a, [wBall.vxs]
-	call hexit_print_byte
-	inc hl
-	ld a, [wBall.vy]
-	call hexit_print_byte
-	ld a, [wBall.vys]
-	call hexit_print_byte
-
 	ret
 
 

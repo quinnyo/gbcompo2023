@@ -3,6 +3,18 @@ def BALL_INC equ 1
 
 include "defines.asm"
 
+	stdecl Ball
+		stfield mode ; Overall state/mode (see bMode* constants)
+		stfield status
+		stfield collide
+		stfield shot
+		stfield stationary ; count consecutive frames with no motion
+		stfield x, w ; X position
+		stfield y, w ; Y position
+		stfield vx, w ; X velocity
+		stfield vy, w ; Y velocity
+		stfield sprite, w ; active sprite address
+	stclose
 
 	stdecl Aim
 		stfield x

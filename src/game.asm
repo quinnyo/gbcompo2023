@@ -184,10 +184,10 @@ update:
 	ret nz
 
 	; collide things
-	ld a, [wBall.x]
+	ld a, [wBall + Ball_x + 1]
 	inc a
 	ld b, a
-	ld a, [wBall.y]
+	ld a, [wBall + Ball_y + 1]
 	inc a
 	ld c, a
 	ld e, BallCollideThingRadius

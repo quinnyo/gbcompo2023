@@ -41,6 +41,10 @@ ThingDef {
 }
 */
 def MapChunk_Things equ 4
+/*
+Loado chunk: a Loado program for loading resources required by the map.
+*/
+def MapChunk_Loado equ 5
 
 def ThingsMax equ 20
 

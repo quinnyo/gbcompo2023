@@ -2,7 +2,7 @@ include "defines.asm"
 
 section "rst_jump_switch", rom0[$08]
 ; Jump into address table immediately following callsite.
-; @param A: index
+; @param A: offset
 jump_switch::
 	pop hl ; return addr at callsite (jump_table[0])
 	; table offset
@@ -22,8 +22,10 @@ section "rst_rom_sel", rom0[$18]
 ; Select ROMX bank.
 ; @param A: bank number to swap to
 rom_sel::
+if def(MBC)
 	ldh [hActiveROM], a
 	ld [rROMB0], a
+endc
 	ret
 
 
@@ -94,6 +96,7 @@ EntryPoint:
 	call lcd_off
 	call oam_init
 	call input_init
+	call loado_init
 	call gfx_load_default_font
 	call gfx_load_default_palettes
 	call Texto_init
@@ -217,8 +220,7 @@ endc
 ; Jump to the `init` routine of the current mode
 Mode_init::
 	ld a, [wMode.current]
-	ld b, a
-	add b
+	add a
 	rst jump_switch
 	for i, MODES_COUNT
 		dw {Mode{u:i}_init}
@@ -228,8 +230,7 @@ Mode_init::
 ; Jump to the `main_iter` routine of the current mode
 Mode_main_iter::
 	ld a, [wMode.current]
-	ld b, a
-	add b
+	add a
 	rst jump_switch
 	for i, MODES_COUNT
 		dw {Mode{u:i}_main_iter}

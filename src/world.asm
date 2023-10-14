@@ -15,6 +15,7 @@ section "World State", wram0
 	st World, wWorld
 	st MapInfo, wMap
 
+wNextChunk: dw
 
 section "World Impl", rom0
 
@@ -144,7 +145,33 @@ world_load_map::
 	ld a, d
 	ld [hl+], a
 
+	; initial "next" chunk address
+	ld hl, wNextChunk
+	ld a, e
+	ld [hl+], a
+	ld a, d
+	ld [hl+], a
+
+
 .loop
+	; get chunk address
+	ld hl, wNextChunk
+	ld a, [hl+]
+	ld d, [hl]
+	ld e, a ; DE = next chunk
+
+	or d
+	ret z ; next chunk == 0 => end of map data
+
+	; get new next chunk address
+	ld hl, wNextChunk
+	ld a, [de]
+	inc de
+	ld [hl+], a
+	ld a, [de]
+	inc de
+	ld [hl+], a
+
 	; chunk type
 	ld a, [de]
 	inc de
@@ -158,6 +185,8 @@ world_load_map::
 	jr z, .load_terrain
 	cp MapChunk_Things
 	jr z, .load_things
+	cp MapChunk_Loado
+	jr z, .load_loado
 
 	jr .loop
 
@@ -192,6 +221,10 @@ world_load_map::
 	call world_load_things
 	jr .loop
 
+.load_loado:
+	call loado_load_program ; DE is already program entry point
+	call loado_exec
+	jr .loop
 
 ; Load map info chunk
 ; @param DE: source address

@@ -103,6 +103,22 @@ vmem_copy::
 	ret
 
 
+; @param de: source
+; @param hl: destination
+; @param c: length
+vmem_copy_short::
+:
+	ldh a, [rSTAT]
+	and STATF_BUSY
+	jr nz, :-
+	ld a, [de]
+	ld [hl+], a
+	inc de
+	dec c
+	jr nz, :-
+	ret
+
+
 ; VRAM safe mem_copy_double -- checks for safe VRAM access before every write.
 ; @param de: source
 ; @param hl: destination

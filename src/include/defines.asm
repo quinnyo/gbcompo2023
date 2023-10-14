@@ -10,6 +10,12 @@ include "hardware.inc"
 *                                                   THINGS *
 ***********************************************************/
 
+if def(MKMBC) && strcmp("{MKMBC}", "0x00") != 0
+	def MBC equ 1
+else
+	def NOMBC equ 1
+endc
+
 ; Size of the tilemap in bytes.
 def BGMAP_LEN equ $0400
 
@@ -68,6 +74,50 @@ else
 endc
 endm
 
+
+/***********************************************************
+*                           SHRIMP: Shared Resource Import *
+***********************************************************/
+
+; ShrimpPathToLabel PATH
+; Convert file path to ID suitable for use as a label.
+; The result is stored in `SHRIMP_LABEL`
+; @param PATH: File path as a quoted string.
+macro ShrimpPathToLabel
+	redef SHRIMP_LABEL equs strrpl(strrpl(strcat(\1), "/", "_"), ".", "_")
+endm
+
+
+; Import a binary resource file.
+; Include it in ROM if it hasn't been already. DOESN'T ACTUALLY WORK THOUGH.
+; The data is added to ROMX in its own section.
+; The section is named automatically, with the format: `"{PATH}"`.
+; ShrimpIncbin PATH
+; Usage: `ShrimpIncbin "res/marino.chr"`              -- automatically labelled `res_marino_chr`
+;        `ShrimpIncbin "res/fluidi.chr", chr_fluidi`  -- custom labelled `chr_fluidi`
+; @param PATH: Path to the resource (will be passed to incbin) as a string.
+macro ShrimpIncbin
+	assert _NARG == 1 || _NARG == 2
+
+	if _NARG == 1
+		ShrimpPathToLabel \1
+	elif _NARG == 2
+		redef SHRIMP_LABEL equs "\2"
+	endc
+
+	if !def({SHRIMP_LABEL})
+		pushs
+		section strcat(\1), romx
+		{SHRIMP_LABEL}::
+			incbin \1
+		pops
+	endc
+endm
+
+
+macro ShrimpRequire
+
+endm
 
 /***********************************************************
 *                                                    AUDIO *

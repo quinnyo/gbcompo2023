@@ -1,19 +1,20 @@
 
-INCLUDE "defines.asm"
-INCLUDE "res/onebit-mono.inc"
+include "defines.asm"
+include "loado.inc"
+include "res/onebit-mono.inc"
+include "gfxmap.inc"
 
-
-SECTION "OBJ Tiles", VRAM[$8000]
+section "OBJ Tiles", vram[$8000]
 vOBJTiles::
 
-SECTION "BG Tiles", VRAM[$8800]
+section "BG Tiles", vram[$8800]
 vBGTiles::
 
-SECTION "UI Tiles", VRAM[$9000]
+section "UI Tiles", vram[$9000]
 vFontTiles::
 
 
-SECTION "GFXLOADER", ROM0
+section "GFXLOADER", rom0
 
 gfx_load_default_font::
 	ld hl, vFontTiles
@@ -25,18 +26,13 @@ gfx_load_default_font::
 
 ; load tile data for game objects
 gfx_load_game_obj::
-	ld hl, vOBJTiles
-	ld de, OBJTiles_data
-	ld bc, OBJTiles_data_end - OBJTiles_data
-	call vmem_copy
+	ld de, LoadoPrg_LoadGameObj
+	call loado_load_program
+	call loado_exec
 	ret
 
 
 gfx_load_bg_tiles::
-	ld hl, vBGTiles
-	ld de, BGTiles_data
-	ld bc, BGTiles_data_end - BGTiles_data
-	call vmem_copy
 	ret
 
 
@@ -102,8 +98,29 @@ gfx_ocp_load::
 
 
 default_font:
-	INCBIN "res/onebit-mono.1bpp", 0, ONEBIT_MONO_RES_SIZE
+	incbin "res/onebit-mono.1bpp", 0, ONEBIT_MONO_RES_SIZE
 .end
+
+
+	ShrimpIncbin "res/shapes.2bpp"
+	ShrimpIncbin "res/ball.2bpp"
+	ShrimpIncbin "res/map/buildings.2bpp"
+	ShrimpIncbin "res/map/terrain.2bpp"
+	ShrimpIncbin "res/map/warships.2bpp"
+
+
+LoadoPrg_LoadGameObj:
+	db LOADOCODE_CHRB_0
+	db LOADOCODE_SRC
+	dw res_shapes_2bpp
+	db LOADOCODE_DEST_CHR, tShapes
+	db LOADOCODE_CHRCOPY, tShapes_count
+	db LOADOCODE_SRC
+	dw res_ball_2bpp
+	db LOADOCODE_SRC_CHR, 0
+	db LOADOCODE_DEST_CHR, tBall
+	db LOADOCODE_CHRCOPY, tBall_count
+	db LOADOCODE_STOP
 
 
 ; ColorW R, G, B
@@ -149,17 +166,3 @@ cpal_bluen:
 	ColorW 19, 22, 22
 	ColorW 13, 14, 19
 	ColorW 4, 4, 5
-
-
-SECTION "GFXDATA", ROMX
-
-BGTiles_data:
-	INCBIN "res/map/terrain.2bpp"
-BGTiles_data_end:
-
-
-OBJTiles_data:
-	INCBIN "res/shapes.2bpp"
-	INCBIN "res/ball.2bpp"
-	INCBIN "res/map/buildings.2bpp"
-OBJTiles_data_end:

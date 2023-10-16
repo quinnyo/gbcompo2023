@@ -2,7 +2,7 @@ include "ball.inc"
 include "defines.asm"
 include "maths.inc"
 include "gfxmap.inc"
-
+include "core/sprite.inc"
 
 ; jrlez R, N
 ; JR to N if (signed 16 bit) value in R is less than or equal to zero.
@@ -64,36 +64,26 @@ def CollideSideY equ 5 ; Y offset for Down-Side (L/R) collision points
 
 section "Ball_Sprites", romx
 
-; SpritePart YCENTRE, XCENTRE, TILE_ID, OAM_ATTR
-; Y-, X- CENTRE is the location of the origin *in the tile*:
-; 	The tile will be moved such that its point (Y, X) will be at the origin.
-; 	e.g. `4, 4` will display the tile centered at the object's position.
-macro SpritePart
-	db OAM_Y_OFS - (\1), OAM_X_OFS - (\2), (\3), (\4)
-endm
-
-def SPRITE_PARTS_END equ $80
-
 sprite_Ball_A_f0:
-	SpritePart tBall_A_cy, tBall_A_cx, tBall_A, OAMF_PAL0
+	SpritePart tBall_A_cy, tBall_A_cx, tBall_A
 	db SPRITE_PARTS_END
 
 sprite_Ball_B_f0:
-	SpritePart tBall_B_cy, tBall_B_cx, tBall_B, OAMF_PAL0
+	SpritePart tBall_B_cy, tBall_B_cx, tBall_B
 	db SPRITE_PARTS_END
 
 sprite_Ball_C_f0:
-	SpritePart tBall_C0_cy, tBall_C0_cx, tBall_C0, OAMF_PAL0
-	SpritePart tBall_C1_cy, tBall_C1_cx, tBall_C1, OAMF_PAL0
-	SpritePart tBall_C2_cy, tBall_C2_cx, tBall_C2, OAMF_PAL0
-	SpritePart tBall_C3_cy, tBall_C3_cx, tBall_C3, OAMF_PAL0
+	SpritePart tBall_C0_cy, tBall_C0_cx, tBall_C0
+	SpritePart tBall_C1_cy, tBall_C1_cx, tBall_C1
+	SpritePart tBall_C2_cy, tBall_C2_cx, tBall_C2
+	SpritePart tBall_C3_cy, tBall_C3_cx, tBall_C3
 	db SPRITE_PARTS_END
 
 sprite_Ball_D_f0:
-	SpritePart tBall_C0_cy - 3, tBall_C0_cx + 3, tBall_C0, OAMF_PAL0
-	SpritePart tBall_C1_cy - 5, tBall_C1_cx - 2, tBall_C1, OAMF_PAL0
-	SpritePart tBall_C2_cy - 2, tBall_C2_cx + 1, tBall_C2, OAMF_PAL0
-	SpritePart tBall_C3_cy - 4, tBall_C3_cx - 1, tBall_C3, OAMF_PAL0
+	SpritePart tBall_C0_cy - 3, tBall_C0_cx + 3, tBall_C0
+	SpritePart tBall_C1_cy - 5, tBall_C1_cx - 2, tBall_C1
+	SpritePart tBall_C2_cy - 2, tBall_C2_cx + 1, tBall_C2
+	SpritePart tBall_C3_cy - 4, tBall_C3_cx - 1, tBall_C3
 	db SPRITE_PARTS_END
 
 ;*********************************************************************
@@ -769,39 +759,10 @@ draw_ball:
 	ld e, a
 	ld a, [wBall.sprite + 1]
 	ld d, a
-	jp draw_parts
+	jp sprite_draw_parts
 
 
 Ball_debug::
-	ret
-
-
-; Draw sprite parts (one tile) from a SpriteDef.
-; Sprite part should be 4 bytes: { Y, X, TILE, OAM_ATTRS }
-; Will draw parts until encountering SPRITE_PARTS_END in place of a Y value.
-; @reg BC: Position (origin) of sprite
-; @reg DE(+4): Address of first sprite part
-; @reg HL(+4): Destination address -- four byte OAM entry will be written starting here.
-draw_parts:
-:
-	ld a, [de] ; Y
-	cp SPRITE_PARTS_END
-	ret z
-	inc de
-	add c
-	ld [hl+], a
-	ld a, [de] ; X
-	inc de
-	add b
-	ld [hl+], a
-	ld a, [de] ; TILE
-	inc de
-	ld [hl+], a
-	ld a, [de] ; ATTR
-	inc de
-	ld [hl+], a
-	jr :-
-
 	ret
 
 

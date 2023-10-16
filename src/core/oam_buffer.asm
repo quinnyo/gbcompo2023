@@ -1,4 +1,4 @@
-INCLUDE "defines.asm"
+INCLUDE "common.inc"
 
 
 SECTION "OAMBufferState", WRAM0, ALIGN[8]

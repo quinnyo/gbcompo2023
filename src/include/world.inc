@@ -1,7 +1,7 @@
 if !def(WORLD_INC)
 def WORLD_INC equ 1
 
-include "defines.asm"
+include "common.inc"
 
 
 ; The address being used for displaying the world tilemap.

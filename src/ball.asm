@@ -1,5 +1,5 @@
 include "ball.inc"
-include "defines.asm"
+include "common.inc"
 include "maths.inc"
 include "gfxmap.inc"
 include "core/sprite.inc"

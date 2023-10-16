@@ -1,5 +1,5 @@
 
-INCLUDE "defines.asm"
+INCLUDE "common.inc"
 INCLUDE "input.inc"
 
 

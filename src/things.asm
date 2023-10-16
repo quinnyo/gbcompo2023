@@ -1,5 +1,5 @@
 
-include "defines.asm"
+include "common.inc"
 include "world.inc"
 include "gfxmap.inc"
 

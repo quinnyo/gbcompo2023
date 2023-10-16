@@ -1,7 +1,7 @@
 if !def(BALL_INC)
 def BALL_INC equ 1
 
-include "defines.asm"
+include "common.inc"
 
 	stdecl Ball
 		stfield mode ; Overall state/mode (see bMode* constants)

@@ -1,4 +1,4 @@
-include "defines.asm"
+include "common.inc"
 include "input.inc"
 include "mus.inc"
 

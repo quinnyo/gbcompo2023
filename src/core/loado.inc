@@ -66,7 +66,7 @@ CHRPICK i:byte
 if !def(LOADO_INC)
 def LOADO_INC equ 1
 
-include "defines.asm"
+include "common.inc"
 
 	stdecl Loado
 		stfield prg, w

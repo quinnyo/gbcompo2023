@@ -8,7 +8,7 @@
 *   https://github.com/eievui5/esprit/blob/main/src/sfx_driver.asm
 ******************************************************************************/
 
-include "defines.asm"
+include "common.inc"
 
 def CH1           equ %0001
 def CH2           equ %0010

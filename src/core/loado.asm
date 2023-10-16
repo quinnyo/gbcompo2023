@@ -2,7 +2,7 @@
 *                                  Loado Loado Loado Loado *
 ***********************************************************/
 
-include "defines.asm"
+include "common.inc"
 include "core/loado.inc"
 
 

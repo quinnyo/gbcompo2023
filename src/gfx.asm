@@ -1,5 +1,5 @@
 
-include "defines.asm"
+include "common.inc"
 include "core/loado.inc"
 include "res/onebit-mono.inc"
 include "gfxmap.inc"

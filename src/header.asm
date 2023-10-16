@@ -1,4 +1,4 @@
-include "defines.asm"
+include "common.inc"
 
 section "rst_jump_switch", rom0[$08]
 ; Jump into address table immediately following callsite.

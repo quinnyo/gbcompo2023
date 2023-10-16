@@ -1,4 +1,4 @@
-include "defines.asm"
+include "common.inc"
 
 	stdecl Settings
 		stfield level ; selected level index

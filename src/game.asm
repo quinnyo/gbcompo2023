@@ -1,4 +1,4 @@
-include "defines.asm"
+include "common.inc"
 include "ball.inc"
 
 def bStatusUpdate equ 0

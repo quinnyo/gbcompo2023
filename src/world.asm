@@ -36,20 +36,24 @@ world_init::
 	ret
 
 
-; @param B: pX
+; Look up terrain height in column containing `pX`.
+; @param A: pX
+; @return A: Terrain height
 ; @return HL: address of terrain column that contains `pX`
 world_get_terrain_column::
-	ld a, b
-
 rept Map_TerrainSubdiv
 	srl a
 endr
 
-	; clamp to terrain buffer size
-	cp Map_TerrainBufferSize
+	; clamp to terrain buffer range
+	def _CLAMP_MARGIN equ (256 - Map_TerrainBufferSize) >>> 1
+	cp 255 - _CLAMP_MARGIN ; clamp to start (zero) if closer to start than end
 	jr c, :+
-	ld hl, wWorld.terrain + Map_TerrainBufferSize - 1
-	ret
+	xor a
+:
+	cp Map_TerrainBufferSize ; clamp to end
+	jr c, :+
+	ld a, Map_TerrainBufferSize - 1
 :
 
 	ld hl, wWorld.terrain
@@ -58,6 +62,8 @@ endr
 	adc h
 	sub l
 	ld h, a
+
+	ld a, [hl]
 
 	ret
 

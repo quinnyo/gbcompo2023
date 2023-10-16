@@ -431,6 +431,8 @@ collide_terrain:
 	ld b, a
 	ld a, [wBall.y + 1]
 	ld c, a
+
+	ld a, b
 	call world_get_terrain_column
 	ld a, [hl]
 	sub CollideDownY
@@ -441,7 +443,6 @@ collide_terrain:
 
 	ld a, b
 	sub CollideSideX
-	ld b, a
 	call world_get_terrain_column
 	ld a, [hl]
 	sub CollideSideY
@@ -451,8 +452,7 @@ collide_terrain:
 :
 
 	ld a, b
-	add CollideSideX * 2
-	ld b, a
+	add CollideSideX
 	call world_get_terrain_column
 	ld a, [hl]
 	sub CollideSideY

@@ -3,7 +3,7 @@
 ***********************************************************/
 
 include "defines.asm"
-include "loado.inc"
+include "core/loado.inc"
 
 
 section "wLoado", wram0

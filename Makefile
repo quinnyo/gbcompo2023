@@ -86,22 +86,25 @@ rebuild:
 ###############################################
 
 # How to build a ROM
-$(BINDIR)/%.$(ROMEXT) $(BINDIR)/%.sym $(BINDIR)/%.map: $(patsubst src/%.asm,$(OBJDIR)/%.o,$(SRCS))
+$(BINDIR)/%.$(ROMEXT) $(BINDIR)/%.sym $(BINDIR)/%.map: $(patsubst src/%,$(OBJDIR)/%.o,$(SRCS))
 	@$(MKDIR_P) $(@D)
 	$(RGBASM) $(ASFLAGS) -o $(OBJDIR)/build_date.o src/res/build_date.asm
 	$(RGBLINK) $(LDFLAGS) -m $(BINDIR)/$*.map -n $(BINDIR)/$*.sym -o $(BINDIR)/$*.$(ROMEXT) $^ $(OBJDIR)/build_date.o \
 	&& $(RGBFIX) -v $(FIXFLAGS) $(BINDIR)/$*.$(ROMEXT)
 
-# `.mk` files are auto-generated dependency lists of the "root" ASM files, to save a lot of hassle.
-# Also add all obj dependencies to the dep file too, so Make knows to remake it
-# Caution: some of these flags were added in RGBDS 0.4.0, using an earlier version WILL NOT WORK
-# (and produce weird errors)
-$(OBJDIR)/%.o $(DEPDIR)/%.mk: src/%.asm
-	@$(MKDIR_P) $(patsubst %/,%,$(dir $(OBJDIR)/$* $(DEPDIR)/$*))
-	$(RGBASM) $(ASFLAGS) -M $(DEPDIR)/$*.mk -MG -MP -MQ $(OBJDIR)/$*.o -MQ $(DEPDIR)/$*.mk -o $(OBJDIR)/$*.o $<
+# Compile all the sources
+$(OBJDIR)/%.o: src/%
+	@$(MKDIR_P) $(@D)
+	$(RGBASM) $(ASFLAGS) -o $(OBJDIR)/$*.o $<
 
+# Generate dependency list (`mk` file)
+$(DEPDIR)/%.mk: src/%
+	@$(MKDIR_P) $(@D)
+	$(RGBASM) $(ASFLAGS) -M $(DEPDIR)/$*.mk -MG -MP -MQ $(OBJDIR)/$*.o -MQ $(DEPDIR)/$*.mk $<
+
+# Require `mk` dependency file for all source files
 ifneq ($(MAKECMDGOALS),clean)
--include $(patsubst src/%.asm,$(DEPDIR)/%.mk,$(SRCS))
+-include $(patsubst src/%,$(DEPDIR)/%.mk,$(SRCS))
 endif
 
 ################################################

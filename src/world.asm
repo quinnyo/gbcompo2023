@@ -70,7 +70,7 @@ endr
 
 ; Convert a pixel position (pX,pY) to a tilemap address.
 ; HL = $9800 + cX + cY * 32
-; @param B,C: Screen point pX,pY (pixels)
+; @param B,C: pX,pY (pixels)
 ; @return HL: Tile address
 ; @mut: A
 world_point_to_tile::

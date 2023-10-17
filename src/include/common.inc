@@ -1,5 +1,5 @@
-if !def(DEFINES_INC)
-def DEFINES_INC equ 1
+if !def(COMMON_INC)
+def COMMON_INC equ 1
 
 
 include "hardware.inc"
@@ -33,6 +33,24 @@ def SIDEF_RIGHT   equ 1 << SIDEB_RIGHT
 def SIDEF_TOP     equ 1 << SIDEB_TOP
 def SIDEF_BOTTOM  equ 1 << SIDEB_BOTTOM
 
+rsreset
+def DIROCT_RIGHT       rb 1
+def DIROCT_DOWN_RIGHT  rb 1
+def DIROCT_DOWN        rb 1
+def DIROCT_DOWN_LEFT   rb 1
+def DIROCT_LEFT        rb 1
+def DIROCT_UP_LEFT     rb 1
+def DIROCT_UP          rb 1
+def DIROCT_UP_RIGHT    rb 1
+
+def DIRCOMPASS_EE equ DIROCT_RIGHT
+def DIRCOMPASS_SE equ DIROCT_DOWN_RIGHT
+def DIRCOMPASS_SS equ DIROCT_DOWN
+def DIRCOMPASS_SW equ DIROCT_DOWN_LEFT
+def DIRCOMPASS_WW equ DIROCT_LEFT
+def DIRCOMPASS_NW equ DIROCT_UP_LEFT
+def DIRCOMPASS_NN equ DIROCT_UP
+def DIRCOMPASS_NE equ DIROCT_UP_RIGHT
 
 ; Wait until safe to access VRAM (Mode 0-1)
 ; @mut A
@@ -115,13 +133,15 @@ macro ShrimpIncbin
 endm
 
 
-macro ShrimpRequire
-
-endm
-
 /***********************************************************
 *                                                    AUDIO *
 ***********************************************************/
+
+def CH1           equ %0001
+def CH2           equ %0010
+def CH3           equ %0100
+def CH4           equ %1000
+def CH_ALL        equ %1111
 
 def AUDIO_STATB_SOUND         equ 6 ; Sound status bit set if sound enabled
 def AUDIO_STATB_MUSIC         equ 7 ; Music status bit set if music enabled
@@ -331,4 +351,4 @@ macro struct_dump
 endm
 
 
-endc ; DEFINES_INC
+endc ; COMMON_INC

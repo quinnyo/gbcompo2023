@@ -61,6 +61,8 @@ endc
 
 	call start_next_shot
 
+	call musctl_stop
+
 	ret
 
 

@@ -15,7 +15,7 @@ macro jrlez
 endm
 
 
-def BALL_DEFAULT_GRAVITY equ 2
+def BALL_DEFAULT_GRAVITY equ 3
 
 ; Number of motion/physics substeps per frame
 def BALL_MOTION_STEPS equ 2
@@ -28,10 +28,12 @@ def BALL_AIMING_YPOS equ 96
 def MAX_SHOTS equ 99
 
 ; Impulse to apply to ball to move it away from a wall/slope.
-def SlideNudgeX equ 2
+def SlideNudgeX equ 4
+; Pretend friction: amount to reduce xvel by during ground contact
+def SlideFrictions equ 3
 
 ; How long ball must be stationary before considering it 'stopped', in frames.
-def StoppedStationaryCount equ $80
+def StoppedStationaryCount equ 90
 
 def bInputAimUp equ PADB_UP
 def bInputAimDown equ PADB_DOWN
@@ -39,24 +41,6 @@ def bInputAimLeft equ PADB_LEFT
 def bInputAimRight equ PADB_RIGHT
 def bInputMod equ PADB_SELECT
 def bInputAccept equ PADB_A
-
-/*
-	Collision Point Status
-	bits for wBall.collide
-*/
-
-def bCollideTerrainLeft   equ 2 ; colliding with the heightmap at the Left collide point
-def bCollideTerrainDown   equ 1 ; colliding with the heightmap at the Down collide point
-def bCollideTerrainRight  equ 0 ; colliding with the heightmap at the Right collide point
-def fCollideTerrainLeft   equ 1 << bCollideTerrainLeft
-def fCollideTerrainDown   equ 1 << bCollideTerrainDown
-def fCollideTerrainRight  equ 1 << bCollideTerrainRight
-
-def CollidePointsCount equ 3
-
-def CollideDownY equ 6 ; Y offset for Down-Centre collision point
-def CollideSideX equ 6 ; X offset for Down-Side (L/R) collision points
-def CollideSideY equ 5 ; Y offset for Down-Side (L/R) collision points
 
 /*
 *	Ball Graphics
@@ -93,6 +77,9 @@ sprite_Ball_D_f0:
 section "Ball_State", wram0
 
 	st Ball, wBall
+
+wMotionX: dw
+wMotionY: dw
 
 wShot::
 	.count:: db
@@ -147,6 +134,13 @@ Ball_reset::
 	ld bc, Ball_sz
 	ld hl, wBall
 	call mem_copy
+
+	xor a
+	ld hl, wMotionX
+	ld [hl+], a
+	ld [hl+], a
+	ld [hl+], a
+	ld [hl+], a
 
 	; load aiming (tee) position from map
 	ld a, [wMap.tee_x]
@@ -413,18 +407,13 @@ mode_aiming_out:
 */
 
 ; Check collision with terrain heightmap and update collision status bits.
+; @param B,C: pX,pY
 ; @ret D: CollideTerrain flags
-; @mut: A, B, C, H, L
+; @mut: A, H, L
 collide_terrain:
 	ld d, 0
-	ld a, [wBall.x + 1]
-	ld b, a
-	ld a, [wBall.y + 1]
-	ld c, a
-
 	ld a, b
 	call world_get_terrain_column
-	ld a, [hl]
 	sub CollideDownY
 	cp c ; colliding = pY > (terrainY - R)
 	jr nc, :+
@@ -434,7 +423,6 @@ collide_terrain:
 	ld a, b
 	sub CollideSideX
 	call world_get_terrain_column
-	ld a, [hl]
 	sub CollideSideY
 	cp c
 	jr nc, :+
@@ -444,7 +432,6 @@ collide_terrain:
 	ld a, b
 	add CollideSideX
 	call world_get_terrain_column
-	ld a, [hl]
 	sub CollideSideY
 	cp c
 	jr nc, :+
@@ -518,8 +505,8 @@ motion_step:
 	ld a, b
 	subrrsa bc
 
-.update_pos_x
-	ld hl, wBall + Ball_x
+.accum_motion_x
+	ld hl, wMotionX
 	ld a, [hl]
 	add c
 	ld [hl+], a
@@ -563,8 +550,8 @@ motion_step:
 	ld a, b
 	subrrsa bc
 
-.update_pos_y
-	ld hl, wBall + Ball_y
+.accum_motion_y
+	ld hl, wMotionY
 	ld a, [hl]
 	add c
 	ld [hl+], a
@@ -605,41 +592,152 @@ motion_step:
 	ld [wBall.sprite + 1], a
 :
 
-	; only collide if ball has peaked
-	bit bBallStatPeaked, e
-	jr z, .no_collide
-
-.collide
-	call collide_terrain
-
-	ld a, d
-	ld [wBall.collide], a
-
-	; slow down if colliding terrain
-	bit bCollideTerrainDown, d
-	jr z, :+
-	ld a, [wBall.vy + 1]
-	sra a
-	ld [wBall.vy + 1], a
-	ld a, [wBall.vy]
-	rra
-	ld [wBall.vy], a
-
-	; "friction"
-	ld a, [wBall.vx + 1]
-	sra a
-	ld [wBall.vx + 1], a
-	ld a, [wBall.vx]
-	rra
-	ld [wBall.vx], a
-:
-
-.no_collide
-
-.done
 	; store updated status
 	ld a, e
 	ld [wBall.status], a
+
+	; only collide if ball has peaked
+	bit bBallStatPeaked, e
+	jr nz, .apply_motion_stepcollide
+
+.apply_motion_nocollide
+	; just add velocity to position
+	ld hl, wMotionX+1
+	ld a, [hl]
+	ld [hl], 0
+	ld hl, wBall.x+1
+	add [hl]
+	ld [hl], a
+
+	ld hl, wMotionY+1
+	ld a, [hl]
+	ld [hl], 0
+	ld hl, wBall.y+1
+	add [hl]
+	ld [hl], a
+
+	ret
+
+.apply_motion_stepcollide
+	ld hl, wMotionX+1
+	ld d, [hl]
+	ld [hl], 0
+	ld hl, wMotionY+1
+	ld e, [hl]
+	ld [hl], 0
+
+	ld a, [wBall.x+1]
+	ld b, a
+	ld a, [wBall.y+1]
+	ld c, a
+
+.try_step
+	ld a, d
+	and a
+	jr z, .try_step_y
+	bit 7, d
+	jr z, .xpos
+.xneg ; travelling left
+	dec b
+	inc d
+	ld a, b
+	sub CollideSideX
+	jr nc, :+ ; if underflow
+	ld a, 0
+:
+	call world_get_terrain_column
+	jr nc, .try_step_y ; no collide, continue
+	inc b ; revert
+	ld d, 0
+	jr .try_step_y
+.xpos ; travelling right
+	inc b
+	dec d
+	ld a, b
+	add CollideSideX
+	jr nc, :+ ; if overflow
+	ld a, 255
+:
+	call world_get_terrain_column
+	jr nc, .try_step_y ; no collide, continue
+	dec b ; revert
+	ld d, 0
+
+.try_step_y
+	ld a, e
+	and a
+	jr z, .continue
+	bit 7, e
+	jr z, .ypos
+.yneg ; travelling up
+	dec c
+	inc e
+	ld a, b
+	call world_get_terrain_column
+	add CollideDownY
+	cp c
+	jr nc, .continue ; no collide, continue
+	inc c ; revert
+	ld e, 0
+	jr .continue
+.ypos ; travelling down
+	inc c
+	dec e
+	ld a, b
+	call world_get_terrain_column
+	sub CollideDownY
+	cp c
+	jr nc, .continue ; no collide, continue
+	dec c ; revert
+	ld e, 0
+
+.continue
+	ld a, d
+	and a
+	jr nz, .try_step
+	or e
+	jr nz, .try_step_y
+
+.step_commit
+	ld a, b
+	ld [wBall.x+1], a
+	ld a, c
+	ld [wBall.y+1], a
+
+.step_done
+
+
+.collide
+	ld a, [wBall.x + 1]
+	ld b, a
+	ld a, [wBall.y + 1]
+	inc a ; must use (pY + 1) as ball should never be below surface from stepped motion
+	ld c, a
+	call collide_terrain
+	ld a, d
+	ld [wBall.collide], a
+
+	; handle ground contact
+	bit bCollideTerrainDown, d
+	jr z, .ground_contact_done
+	; sliding "friction"
+	ld hl, wBall.vx
+	ld a, [hl+]
+	ld b, [hl]
+	ld c, a
+	or b
+	jr z, .ground_contact_done ; zero x velocity
+
+	ld a, -SlideFrictions
+	bit 7, b
+	jr z, :+
+	ld a, SlideFrictions
+:
+	addrrsa bc
+	ld a, b
+	ld [hl-], a
+	ld [hl], c
+.ground_contact_done
 	ret
 
 

@@ -19,7 +19,6 @@ wNextChunk: dw
 
 section "World Impl", rom0
 
-
 world_init::
 	ZeroSection "World State"
 
@@ -36,10 +35,21 @@ world_init::
 	ret
 
 
-; Look up terrain height in column containing `pX`.
-; @param A: pX
+; Test if a point is inside the terrain.
+; @param B,C: pX,pY
 ; @return A: Terrain height
 ; @return HL: address of terrain column that contains `pX`
+; @F.C: `pY > terrain height` (colliding)
+; @mut: AF, HL
+world_point_collide_terrain::
+	ld a, b
+
+; Look up terrain height in column containing `pX`.
+; @param A: pX
+; @param C: [optional] pY
+; @return A: Terrain height
+; @return HL: address of terrain column that contains `pX`
+; @F.C: `(C) > terrain height` (colliding)
 world_get_terrain_column::
 rept Map_TerrainSubdiv
 	srl a
@@ -64,6 +74,7 @@ endr
 	ld h, a
 
 	ld a, [hl]
+	cp c
 
 	ret
 
@@ -131,9 +142,12 @@ world_point_collide_bounds::
 
 ; @mut: A, C, HL
 world_clear_terrain::
+	xor a
+	ld [wMap.terrain_size], a
+
 	ld hl, wWorld.terrain
 	ld c, Map_TerrainBufferSize
-	xor a
+	ld a, Map_TerrainDefaultHeight
 :
 	ld [hl+], a
 	dec c
@@ -144,6 +158,8 @@ world_clear_terrain::
 
 ; @param DE: source address
 world_load_map::
+	call world_clear_terrain
+
 	ld hl, wMap
 	; store map address
 	ld a, e
@@ -212,8 +228,6 @@ world_load_map::
 	; Map.terrain_size
 	ld a, [de]
 	inc de
-	ld [wMap.terrain_size], a
-	ld c, a
 	; Map.terrain
 	call world_load_terrain
 	jr .loop
@@ -256,23 +270,25 @@ world_load_map_info:
 
 ; Map Loading: loads heightmap terrain into the world.
 ; @param DE: source address
-; @param  C: resolution of source terrain
+; @param  A: resolution of source terrain
 world_load_terrain:
-	; clamp C and check for C == 0
-	ld a, c
-	and Map_TerrainBufferSize | (Map_TerrainBufferSize - 1)
-	ret z
-	ld c, a
+	; clamp size to fit in buffer
+	cp Map_TerrainBufferSize + 1
+	jr c, :+
+	ld a, Map_TerrainBufferSize
+:
+	ld [wMap.terrain_size], a
+	and a
+	ret z ; map terrain size == 0
 
+	ld c, a
 	ld hl, wWorld.terrain
 :
 	ld a, [de]
-	ld [hl+], a
 	inc de
+	ld [hl+], a
 	dec c
 	jr nz, :-
-
-.done
 	ret
 
 

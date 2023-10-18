@@ -18,6 +18,8 @@ def Map_CellSize equ 8
 def Map_TerrainSubdiv equ 0
 ; Number of terrain heightmap columns.
 def Map_TerrainBufferSize equ (Map_MaxColumns * Map_CellSize) >> Map_TerrainSubdiv
+; Default (clear value) terrain height value
+def Map_TerrainDefaultHeight equ 255
 
 def MapChunk_End equ 0
 def MapChunk_Info equ 1

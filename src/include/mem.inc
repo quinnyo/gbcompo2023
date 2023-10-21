@@ -16,6 +16,20 @@ mem_copy::
 	ret
 
 
+; Copy (255 or fewer) bytes from one area to another
+; @param de: source
+; @param hl: destination
+; @param c: length
+mem_copy_short::
+:
+	ld a, [de]
+	ld [hl+], a
+	inc de
+	dec c
+	jr nz, :-
+	ret
+
+
 ; Copies and expands a block of bytes, writing each byte twice.
 ; Can be used to load (2bpp) tile data from a 1bpp source.
 ; Note that this will write `length * 2` bytes at the destination.

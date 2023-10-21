@@ -68,6 +68,31 @@ def tBall_C2_cy   equ 0
 def tBall_C3_cx   equ 0
 def tBall_C3_cy   equ 0
 
+
+def tBallder_rolling_columns      equ $08
+def tBallder_rolling_rows         equ $04
+def tBallder_rolling_framecount   equ $08
+def tBallder_rolling_count        equ tBallder_rolling_columns * tBallder_rolling_rows
+
+def tBallder_rolling              equ _RS
+
+def tBallder_rolling_q0t0 rb 2
+def tBallder_rolling_q0t1 rb 2
+def tBallder_rolling_q0t2 rb 2
+def tBallder_rolling_q0t3 rb 2
+def tBallder_rolling_q2t0 rb 2
+def tBallder_rolling_q2t1 rb 2
+def tBallder_rolling_q2t2 rb 2
+def tBallder_rolling_q2t3 rb 2
+def tBallder_rolling_q0t4 rb 2
+def tBallder_rolling_q0t5 rb 2
+def tBallder_rolling_q0t6 rb 2
+def tBallder_rolling_q0t7 rb 2
+def tBallder_rolling_q2t4 rb 2
+def tBallder_rolling_q2t5 rb 2
+def tBallder_rolling_q2t6 rb 2
+def tBallder_rolling_q2t7 rb 2
+
 ; /tBall
 
 ; tThings

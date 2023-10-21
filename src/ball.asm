@@ -56,19 +56,59 @@ sprite_Ball_B_f0:
 	SpritePart tBall_B_cy, tBall_B_cx, tBall_B
 	db SPRITE_PARTS_END
 
-sprite_Ball_C_f0:
-	SpritePart tBall_C0_cy, tBall_C0_cx, tBall_C0
-	SpritePart tBall_C1_cy, tBall_C1_cx, tBall_C1
-	SpritePart tBall_C2_cy, tBall_C2_cx, tBall_C2
-	SpritePart tBall_C3_cy, tBall_C3_cx, tBall_C3
-	db SPRITE_PARTS_END
-
 sprite_Ball_D_f0:
 	SpritePart tBall_C0_cy - 3, tBall_C0_cx + 3, tBall_C0
 	SpritePart tBall_C1_cy - 5, tBall_C1_cx - 2, tBall_C1
 	SpritePart tBall_C2_cy - 2, tBall_C2_cx + 1, tBall_C2
 	SpritePart tBall_C3_cy - 4, tBall_C3_cx - 1, tBall_C3
 	db SPRITE_PARTS_END
+
+; Rolling Ballder animated (2x2) sprite
+; 16 frames (8 unique, 8 symmetry)
+sprite_Ballder_rolling:
+	for I, tBallder_rolling_framecount * 2
+		def _SRC_FRAME equ I % tBallder_rolling_framecount
+		if I >= tBallder_rolling_framecount
+			def _OAM_ATTR equ QUARTET_FLIP_BOTH
+		else
+			def _OAM_ATTR equ 0
+		endc
+
+		.frame_{X:I}:
+			QUARTET tBallder_rolling_q0t{X:_SRC_FRAME}, tBallder_rolling_columns, _OAM_ATTR
+			db SPRITE_PARTS_END
+
+		purge _SRC_FRAME, _OAM_ATTR
+	endr
+
+
+/*
+AnimSequence {
+	frame_count: byte,
+	// array of frames -- pointers to SpritesPart
+	frames: word[frame_count],
+}
+*/
+
+def anim_Ballder_rolling_frames equ tBallder_rolling_framecount * 2
+anim_Ballder_rolling:
+	db anim_Ballder_rolling_frames
+	for FRAME, anim_Ballder_rolling_frames
+		dw sprite_Ballder_rolling.frame_{X:FRAME}
+	endr
+
+anim_Ballder_tee:
+	db 1
+	dw sprite_Ball_A_f0
+
+anim_Ballder_up:
+	db 1
+	dw sprite_Ball_B_f0
+
+anim_Ballder_stopped:
+	db 1
+	dw sprite_Ball_D_f0
+
 
 ;*********************************************************************
 ;* Ball State (WRAM)
@@ -81,10 +121,16 @@ section "Ball_State", wram0
 wMotionX: dw
 wMotionY: dw
 
+	st BallSprite, wBallSprite
+
+
+section "Shot_State", wram0
+
+	st Aim, wAim
+
 wShot::
 	.count:: db
 
-	st Aim, wAim
 
 ;*********************************************************************
 ;* Ball Data (ROM)
@@ -97,13 +143,11 @@ BallDefault:
 	.mode: db fBallModeAiming | fBallModeTransIn
 	.status: db 0
 	.collide: db 0
-	.shot: db 0
 	.stationary: db 0
 	.x: dw BALL_AIMING_XPOS
 	.y: dw BALL_AIMING_YPOS
 	.vx: dw 0
 	.vy: dw 0
-	.sprite: dw sprite_Ball_A_f0
 .end
 
 assert (BallDefault.end - BallDefault) == Ball_sz
@@ -123,6 +167,13 @@ Ball_init::
 	xor a
 	ld [wShot.count], a
 
+	ld c, BallSprite_sz
+	ld hl, wBallSprite
+:
+	ld [hl+], a
+	dec c
+	jr nz, :-
+
 	ld a, BallAimDefaultX
 	ld [wAim.x], a
 	ld a, BallAimDefaultY
@@ -134,6 +185,12 @@ Ball_reset::
 	ld bc, Ball_sz
 	ld hl, wBall
 	call mem_copy
+
+	ld hl, wBallSprite
+	ld de, anim_Ballder_tee
+	ld a, [de]
+	inc de
+	call sprite_init
 
 	xor a
 	ld hl, wMotionX
@@ -155,9 +212,6 @@ Ball_reset::
 	ld a, c
 	ld [wBall.y + 1], a
 :
-
-	ld a, [wShot.count]
-	ld [wBall.shot], a
 
 	ret
 
@@ -266,7 +320,7 @@ aiming_update:
 aiming_display:
 	call oam_next_recall
 
-	call draw_ball
+	call draw_ball_sprite
 
 	ld a, [wAim.x]
 	ld d, a
@@ -573,7 +627,6 @@ motion_step:
 
 
 ; update 'peaked' status & sprite
-.update_peaked
 	call update_offscreen
 
 	; check Y velocity peaked
@@ -586,10 +639,13 @@ motion_step:
 	set bBallStatPeaked, e
 
 	; change to 'going down' sprite
-	ld a, LOW(sprite_Ball_C_f0)
-	ld [wBall.sprite], a
-	ld a, HIGH(sprite_Ball_C_f0)
-	ld [wBall.sprite + 1], a
+	push de
+	ld hl, wBallSprite
+	ld de, anim_Ballder_rolling
+	ld a, [de]
+	inc de
+	call sprite_init
+	pop de
 :
 
 	; store updated status
@@ -625,6 +681,19 @@ motion_step:
 	ld hl, wMotionY+1
 	ld e, [hl]
 	ld [hl], 0
+
+	; advance rolling frames if on ground...
+	ld a, [wBall.collide]
+	bit bCollideTerrainDown, a
+	jr z, :+
+
+	ld hl, wBallSprite.frame
+	ld a, [hl]
+	; TODO: it would be better to use the actual travel distance, as
+	;       sometimes the ball spins in place.
+	add d ; advance by motion amount ...
+	ld [hl], a
+:
 
 	ld a, [wBall.x+1]
 	ld b, a
@@ -793,18 +862,21 @@ endr
 	ld [wBall.status], a
 
 	; change to 'broken' sprite
-	ld a, LOW(sprite_Ball_D_f0)
-	ld [wBall.sprite], a
-	ld a, HIGH(sprite_Ball_D_f0)
-	ld [wBall.sprite + 1], a
+	ld hl, wBallSprite
+	ld de, anim_Ballder_stopped
+	ld a, [de]
+	inc de
+	call sprite_init
 :
 
 	jr mode_motion_draw
 
 
 mode_motion_draw:
+	ld hl, wBallSprite
+	call sprite_update
 	call oam_next_recall
-	call draw_ball
+	call draw_ball_sprite
 	call oam_next_store
 
 	ret
@@ -819,10 +891,11 @@ mode_motion_in:
 	ld [wBall.mode], a
 
 	; change to 'going up' sprite
-	ld a, LOW(sprite_Ball_B_f0)
-	ld [wBall.sprite], a
-	ld a, HIGH(sprite_Ball_B_f0)
-	ld [wBall.sprite + 1], a
+	ld hl, wBallSprite
+	ld de, anim_Ballder_up
+	ld a, [de]
+	inc de
+	call sprite_init
 
 	ret
 
@@ -846,18 +919,132 @@ mode_none:
 	ret
 
 
-; HL: OAM buffer address
-draw_ball:
+; @param HL: OAM buffer address
+; @mut: AF, BC, DE, HL
+draw_ball_sprite:
 	ld a, [wBall.x + 1]
 	ld b, a
 	ld a, [wBall.y + 1]
 	ld c, a
 
-	ld a, [wBall.sprite]
+	ld a, [wBallSprite.sprite + 0]
 	ld e, a
-	ld a, [wBall.sprite + 1]
+	ld a, [wBallSprite.sprite + 1]
 	ld d, a
 	jp sprite_draw_parts
+
+
+; @param HL: this
+; @param  A: frame_count
+; @param DE: sequence (pointer to first frame in sequence)
+sprite_init:
+	ld [hl+], a ; frame_count
+	xor a
+	ld [hl+], a ; frame
+	ld a, e
+	ld [hl+], a ; seq.0
+	ld a, d
+	ld [hl+], a ; seq.1
+
+	; read first frame, write sprite
+	ld a, [de]
+	inc de
+	ld [hl+], a
+	ld a, [de]
+	inc de
+	ld [hl+], a
+
+	ret
+
+
+; Set sprite to display frame from loaded sequence
+; @param HL: this
+; @param  D: frame
+; @mut: AF, E
+sprite_set_frame:
+	ld a, [hl+] ; frame_count
+	ld e, a
+	call _sprite_frame_loop_range ; A = frame
+
+	ld [hl+], a ; frame
+	ld e, [hl]  ; seq.0
+	inc hl
+	ld d, [hl] ; seq.1
+	inc hl
+	jr _sprite_display_frame
+
+
+; Limit frame number to range of [0..frame_count].
+; @param D: frame
+; @param E: frame_count
+; @ret   A: frame
+_sprite_frame_loop_range:
+	; (There are probably much better ways to do this.)
+	ld a, e
+	and a
+	ret z ; early out if frame_count == 0
+
+	ld a, d
+	cp e
+	ret c ; done! (frame < frame_count)
+
+	cp $80
+	jr c, .over ; frame < 128, assume overflow occured and SUB
+	; frame >= 128, assume underflow, ADD
+.under
+	cp e
+	ret c ; done!
+	add e
+	jr .under
+.over
+	cp e
+	ret c ; done!
+	sub e
+	jr .over
+
+
+; Update sprite to display current frame.
+; @param HL: this
+; @mut: AF, HL, DE
+sprite_update:
+	ld a, [hl+] ; frame_count
+	ld e, a
+	ld d, [hl]  ; frame
+	call _sprite_frame_loop_range
+	ld [hl+], a ; frame
+
+	ld e, [hl]  ; seq.0
+	inc hl
+	ld d, [hl]  ; seq.1
+	inc hl
+
+	; fall through
+
+; Display a frame from a sprite sequence
+; @param HL: this.sprite
+; @param  A: frame
+; @param DE: sequence (pointer to first frame in sequence)
+_sprite_display_frame:
+	; find frame in sequence
+	add a ; double A to get 2 byte offset
+	jr nc, :+
+	inc d
+:
+	add e
+	ld e, a
+	adc d
+	sub e
+	ld d, a
+
+	; read frame, write sprite
+	ld a, [de]
+	inc de
+	ld [hl+], a ; sprite.0
+	ld a, [de]
+	inc de
+	ld [hl+], a ; sprite.1
+
+	ret
 
 
 Ball_debug::

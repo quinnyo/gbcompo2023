@@ -4,16 +4,21 @@ def BALL_INC equ 1
 include "common.inc"
 
 	stdecl Ball
-		stfield mode ; Overall state/mode (see bMode* constants)
+		stfield mode          ; Overall state/mode (see bMode* constants)
 		stfield status
 		stfield collide
-		stfield shot
-		stfield stationary ; count consecutive frames with no motion
-		stfield x, w ; X position
-		stfield y, w ; Y position
-		stfield vx, w ; X velocity
-		stfield vy, w ; Y velocity
-		stfield sprite, w ; active sprite address
+		stfield stationary    ; count consecutive frames with no motion
+		stfield x, w          ; X position
+		stfield y, w          ; Y position
+		stfield vx, w         ; X velocity
+		stfield vy, w         ; Y velocity
+	stclose
+
+	stdecl BallSprite
+		stfield frame_count   ; length of sequence in frames
+		stfield frame         ; current frame in sequence
+		stfield seq, w        ; pointer to loaded sequence
+		stfield sprite, w     ; spriteparts
 	stclose
 
 	stdecl Aim

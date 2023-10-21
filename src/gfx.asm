@@ -104,6 +104,7 @@ default_font:
 
 	ShrimpIncbin "res/shapes.2bpp"
 	ShrimpIncbin "res/ball.2bpp"
+	ShrimpIncbin "res/ballder_rolling.2bpp"
 	ShrimpIncbin "res/map/buildings.2bpp"
 	ShrimpIncbin "res/map/terrain.2bpp"
 	ShrimpIncbin "res/map/warships.2bpp"
@@ -111,15 +112,24 @@ default_font:
 
 LoadoPrg_LoadGameObj:
 	db LOADOCODE_CHRB_0
+
 	db LOADOCODE_SRC
 	dw res_shapes_2bpp
 	db LOADOCODE_DEST_CHR, tShapes
 	db LOADOCODE_CHRCOPY, tShapes_count
+
 	db LOADOCODE_SRC
 	dw res_ball_2bpp
 	db LOADOCODE_SRC_CHR, 0
 	db LOADOCODE_DEST_CHR, tBall
 	db LOADOCODE_CHRCOPY, tBall_count
+
+	db LOADOCODE_SRC
+	dw res_ballder_rolling_2bpp
+	db LOADOCODE_SRC_CHR, 0
+	db LOADOCODE_DEST_CHR, tBallder_rolling
+	db LOADOCODE_CHRCOPY, tBallder_rolling_count
+
 	db LOADOCODE_STOP
 
 

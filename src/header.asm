@@ -2,7 +2,9 @@ include "common.inc"
 
 section "rst_jump_switch", rom0[$08]
 ; Jump into address table immediately following callsite.
+; DOES NOT RETURN
 ; @param A: offset
+; @mut: AF, HL
 jump_switch::
 	pop hl ; return addr at callsite (jump_table[0])
 	; table offset

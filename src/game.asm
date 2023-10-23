@@ -1,5 +1,6 @@
 include "common.inc"
 include "ball.inc"
+include "app/shotctl.inc"
 
 def bStatusUpdate equ 0
 def bStatusClear equ 5
@@ -12,6 +13,9 @@ def fStatusPaused equ 1 << bStatusPaused
 def fStatusShotEnded equ 1 << bStatusShotEnded
 
 def fStatusPromptActive equ fStatusClear | fStatusPaused | fStatusShotEnded
+
+def MAX_SHOTS equ 99
+
 
 section "GameImpl", rom0
 
@@ -59,8 +63,8 @@ if def(DEBUG_BALL)
 	call Ball_dbg_init
 endc
 
+	call shotctl_init
 	call start_next_shot
-
 	call musctl_stop
 
 	ret
@@ -137,6 +141,26 @@ update:
 :
 
 	call oam_clear
+	call shotctl_update
+	call things_draw
+
+	ret
+
+
+	ShotPhaseFuncDef ball
+_ball_update:
+	ld a, b
+	cp ShotPhaseStatus_INIT
+	ret z
+	cp ShotPhaseStatus_ENTER
+	jr nz, :+
+	; just entered action/ball phase
+	call Ball_launch
+	call build_status_stats
+	ld a, ShotPhaseStatus_OK
+	ld [wShot_phase_status], a
+	ret
+:
 
 	; save ball status before Ball_process
 	ld a, [wBall.status]
@@ -145,9 +169,6 @@ update:
 	call Ball_process
 
 	; get changed ball status
-	ld a, [wBall.mode]
-	bit bBallModeMotion, a
-	jr z, :+
 	ld a, [wGame.ballstat]
 	ld e, a
 	ld a, [wBall.status]
@@ -160,26 +181,6 @@ update:
 	call .show_shot_end_prompt
 :
 
-	ld a, [wBall.mode]
-	bit bBallModeMotion, a
-	call nz, .ball_in_play
-
-	call things_draw
-
-	; If ball's shot count (wShot.count) differs from game score, shot just taken
-	ld a, [wGame.shot_count]
-	ld d, a
-	ld a, [wShot.count]
-	cp d
-	jr z, :+
-	ld [wGame.shot_count], a
-	call build_status_stats
-:
-
-	ret
-
-; to run only if ball has been hit
-.ball_in_play:
 	; Check if ball stuck / stopped / shot ended
 	ld a, [wBall.status]
 	and fBallStatShotEnded
@@ -237,6 +238,13 @@ update:
 
 
 start_next_shot:
+	ld a, [wGame.shot_count]
+	cp MAX_SHOTS
+	ret nc
+	inc a
+	ld [wGame.shot_count], a
+
+	call shotctl_start_next_shot
 	call Ball_reset
 
 	ld a, [wGame.status]

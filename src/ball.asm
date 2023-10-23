@@ -25,8 +25,6 @@ def BALL_AIMING_XPOS equ 12
 ; default ball aiming Y position
 def BALL_AIMING_YPOS equ 96
 
-def MAX_SHOTS equ 99
-
 ; Impulse to apply to ball to move it away from a wall/slope.
 def SlideNudgeX equ 4
 ; Pretend friction: amount to reduce xvel by during ground contact
@@ -35,12 +33,6 @@ def SlideFrictions equ 3
 ; How long ball must be stationary before considering it 'stopped', in frames.
 def StoppedStationaryCount equ 90
 
-def bInputAimUp equ PADB_UP
-def bInputAimDown equ PADB_DOWN
-def bInputAimLeft equ PADB_LEFT
-def bInputAimRight equ PADB_RIGHT
-def bInputMod equ PADB_SELECT
-def bInputAccept equ PADB_A
 
 /*
 *	Ball Graphics
@@ -124,14 +116,6 @@ wMotionY: dw
 	st BallSprite, wBallSprite
 
 
-section "Shot_State", wram0
-
-	st Aim, wAim
-
-wShot::
-	.count:: db
-
-
 ;*********************************************************************
 ;* Ball Data (ROM)
 ;*********************************************************************
@@ -140,8 +124,7 @@ section "Ball_Data", romx
 
 
 BallDefault:
-	.mode: db fBallModeAiming | fBallModeTransIn
-	.status: db 0
+	.status: db fBallStatFreeze
 	.collide: db 0
 	.stationary: db 0
 	.x: dw BALL_AIMING_XPOS
@@ -164,9 +147,6 @@ section "Ball_Impl", rom0
 *	Initialise ball systems
 */
 Ball_init::
-	xor a
-	ld [wShot.count], a
-
 	ld c, BallSprite_sz
 	ld hl, wBallSprite
 :
@@ -174,10 +154,7 @@ Ball_init::
 	dec c
 	jr nz, :-
 
-	ld a, BallAimDefaultX
-	ld [wAim.x], a
-	ld a, BallAimDefaultY
-	ld [wAim.y], a
+	; fallthrough
 
 ; Reset ball (to tee) and start aiming next shot.
 Ball_reset::
@@ -221,7 +198,7 @@ Ball_reset::
 *	Main update procedure for Ball.
 */
 Ball_process::
-	call .mode_process
+	call Ball_motion
 
 	; check OOB
 	ld a, [wBall.status]
@@ -251,213 +228,23 @@ Ball_process::
 	ret
 
 
-.mode_process:
-	; overall mode switch
-	ld a, [wBall.mode]
-	bit bBallModeMotion, a
-	jr z, :+
-	bit bBallModeTransIn, a
-	jp nz, mode_motion_in
-	bit bBallModeTransOut, a
-	jp nz, mode_motion_out
-	jp mode_motion
-:
-	bit bBallModeAiming, a
-	jr z, :+
-	bit bBallModeTransIn, a
-	jp nz, mode_aiming_in
-	bit bBallModeTransOut, a
-	jp nz, mode_aiming_out
-	jp mode_aiming
-:
-	jp mode_none
+Ball_launch::
+	; clear freeze status
+	ld hl, wBall.status
+	res bBallStatFreeze, [hl]
 
-
-/*
-*	MODE: AIMING
-*/
-mode_aiming:
-	call aiming_input
-
-	; Aiming done/accepted, don't do another update
-	ld a, [wBall.mode]
-	bit bBallModeTransOut, a
-	ret nz
-
-	call aiming_update
-	call aiming_display
-
-	ret
-
-
-aiming_update:
-	ld a, [wAim.x]
-	ld e, a
-	ld d, 0
-	sla e
-	rl d
-	ld hl, BallMinLaunchVelX
-	add hl, de
-	ld a, h
-	ld [wBall.vx + 1], a
-	ld a, l
-	ld [wBall.vx], a
-
-	ld a, [wAim.y]
-	cpl
-	ld e, a
-	ld d, $FF
-	sla e
-	rl d
-	ld hl, BallMinLaunchVelY + 1
-	add hl, de
-	ld a, h
-	ld [wBall.vy + 1], a
-	ld a, l
-	ld [wBall.vy], a
-
-
-aiming_display:
-	call oam_next_recall
-
-	call draw_ball_sprite
-
-	ld a, [wAim.x]
-	ld d, a
-	ld a, [wAim.y]
-	ld e, a
-	ld a, [wBall.x + 1]
-	add OAM_X_OFS - 4
-	ld b, a
-	ld a, [wBall.y + 1]
-	add OAM_Y_OFS - 4
-	ld c, a
-
-for i, 3
-	ld a, c
-	sub e
-	ld [hl+], a
-	ld a, b
-	add d
-	ld [hl+], a
-	ld a, tShapes_Ring4 - i
-	ld [hl+], a
-	xor a
-	ld [hl+], a
-
-	srl d
-	srl e
-endr
-
-	call oam_next_store
-
-	ret
-
-
-conclude_aiming:
-	ld a, [wShot.count]
-	cp MAX_SHOTS
-	jr nc, :+
-	inc a
-	ld [wShot.count], a
-:
-
-	; Move to 'out' sequence
-	ld a, [wBall.mode]
-	set bBallModeTransOut, a
-	ld [wBall.mode], a
-
-	ret
-
-
-; @param B: initial input bitmask (result is combined with this)
-; @ret B: input bitmask set for each PADB that has been held for 8 frames
-; @mut: A, HL
-input_the_held:
-	ld hl, wInput.hist
-for i, 8
-	ld a, [hl+]
-	cp $FF
-	jr nz, :+
-	set i, b
-:
-endr
-	ret
-
-
-aiming_input:
-	ld a, [wInput.pressed]
-	; accept
-	bit bInputAccept, a
-	jr nz, conclude_aiming
-
-	ld b, a
-	ld de, 0
-	ld hl, $01FE
-	call InputXY_read
-
-	ld b, 0
-	call input_the_held
-
-	ld hl, $02FD
-	call InputXY_read
-
-	ld hl, wAim.x
-	ld a, [hl]
-	add d
-	cp BallAimStepsX
-	jr c, .apply_x
-.clamp_x:
-	bit 7, d
-	jr z, :+
-	xor a
-	jr .apply_x
-:
-	ld a, BallAimStepsX
-.apply_x
-	ld [hl+], a
-
-	ld a, [hl]
-	add e
-	cp BallAimStepsY
-	jr c, .apply_y
-.clamp_y:
-	bit 7, e
-	jr z, :+
-	xor a
-	jr .apply_y
-:
-	ld a, BallAimStepsY
-.apply_y
-	ld [hl+], a
-
-	ret
-
-
-mode_aiming_in:
-	; TODO: EVERYTHING
-	; TODO: UPDATE/AWAIT ANIMATIONS
-
-	; 'in' sequence complete, move to aiming mode proper.
-	ld a, [wBall.mode]
-	res bBallModeTransIn, a
-	ld [wBall.mode], a
-
-	ret
-
-mode_aiming_out:
-	; TODO: EVERYTHING
-	; TODO: UPDATE/AWAIT ANIMATIONS
-
-	; 'out' sequence complete, move to motion mode.
-	ld a, fBallModeMotion | fBallModeTransIn
-	ld [wBall.mode], a
+	; change to 'going up' sprite
+	ld hl, wBallSprite
+	ld de, anim_Ballder_up
+	ld a, [de]
+	inc de
+	call sprite_init
 
 	ret
 
 
 /*
-*	MODE: MOTION
+*	MOTION
 */
 
 ; Check collision with terrain heightmap and update collision status bits.
@@ -832,10 +619,10 @@ check_stationary:
 	ret
 
 
-mode_motion:
+Ball_motion:
 	ld a, [wBall.status]
-	and fBallStatShotEnded
-	jr nz, mode_motion_draw
+	and fBallStatShotEnded | fBallStatFreeze
+	jr nz, Ball_draw
 
 	; push MSB position to the stack before moving
 	ld a, [wBall.x + 1]
@@ -857,7 +644,6 @@ endr
 	jr c, :+
 	; Stopped
 	ld a, [wBall.status]
-	set bBallStatFreeze, a
 	set bBallStatStopped, a
 	ld [wBall.status], a
 
@@ -869,69 +655,25 @@ endr
 	call sprite_init
 :
 
-	jr mode_motion_draw
+	jr Ball_draw
 
 
-mode_motion_draw:
+Ball_draw:
 	ld hl, wBallSprite
 	call sprite_update
 	call oam_next_recall
-	call draw_ball_sprite
-	call oam_next_store
-
-	ret
-
-
-mode_motion_in:
-	; TODO: this
-
-	; move to motion proper
-	ld a, [wBall.mode]
-	res bBallModeTransIn, a
-	ld [wBall.mode], a
-
-	; change to 'going up' sprite
-	ld hl, wBallSprite
-	ld de, anim_Ballder_up
-	ld a, [de]
-	inc de
-	call sprite_init
-
-	ret
-
-
-mode_motion_out:
-	; TODO: When does this actually happen, anyway?
-	; TODO: EVERYTHING
-
-	ret
-
-
-/*
-*	MODE: NONE (FALLBACK)
-*/
-mode_none:
-	ld a, [wBall.mode]
-	res bBallModeTransIn, a
-	res bBallModeTransOut, a
-	ld [wBall.mode], a
-
-	ret
-
-
-; @param HL: OAM buffer address
-; @mut: AF, BC, DE, HL
-draw_ball_sprite:
 	ld a, [wBall.x + 1]
 	ld b, a
 	ld a, [wBall.y + 1]
 	ld c, a
-
 	ld a, [wBallSprite.sprite + 0]
 	ld e, a
 	ld a, [wBallSprite.sprite + 1]
 	ld d, a
-	jp sprite_draw_parts
+	call sprite_draw_parts
+	call oam_next_store
+
+	ret
 
 
 ; @param HL: this

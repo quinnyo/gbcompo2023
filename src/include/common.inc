@@ -315,18 +315,23 @@ macro stfield
 endm
 
 
-; st STRUCT, INSTANCE
+; st STRUCT, INSTANCE, [LABEL_AFFIX = ::]
 ; Create an instance of a struct thing. For use in e.g. a wram section.
 ; Creates labeled structure layout with statically allocated memory.
 ; STRUCT is the name of a struct declared with stdecl.
 ; INSTANCE is the name of the instance root label.
 macro st
-	\2::
+	if _NARG == 3
+		def _LABEL_AFFIX equs "\3"
+	else
+		def _LABEL_AFFIX equs "::"
+	endc
+	\2{_LABEL_AFFIX}
 	for i, \1_len
 		def _FNAME equs "{\1_{u:i}_name}"
 		def _FTYPE equ \1_{u:i}_type
 		def _FLEN equ \1_{u:i}_len
-		.{_FNAME}::
+		.{_FNAME}{_LABEL_AFFIX}
 		if _FLEN > 1
 			ds _FTYPE * _FLEN
 		elif _FTYPE == 1
@@ -338,6 +343,7 @@ macro st
 		endc
 		purge _FNAME, _FTYPE, _FLEN
 	endr
+	purge _LABEL_AFFIX
 endm
 
 

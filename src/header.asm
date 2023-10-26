@@ -66,6 +66,10 @@ ISR_VBlank:
 	ld a, 1
 	ldh [hVBlankF], a
 
+	ldh a, [hTick]
+	inc a
+	ldh [hTick], a
+
 	pop hl
 	pop de
 	pop bc
@@ -191,8 +195,9 @@ include "mem.inc"
 
 
 section "Main_State", hram
-hVBlankF:: db ; VBlank completion flag
-hActiveROM:: db ; Selected ROMX bank number
+hVBlankF:: db      ; VBlank completion flag
+hTick:: db         ; VBlank count
+hActiveROM:: db    ; Selected ROMX bank number
 
 
 /**********************************************************

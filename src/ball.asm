@@ -155,9 +155,7 @@ Ball_reset::
 
 	ld hl, wBallSprite
 	ld de, anim_Ballder_tee
-	ld a, [de]
-	inc de
-	call sprite_init
+	call sprite_init_anim
 
 	xor a
 	ld hl, wMotionX
@@ -226,9 +224,7 @@ Ball_launch::
 	; change to 'going up' sprite
 	ld hl, wBallSprite
 	ld de, anim_Ballder_up
-	ld a, [de]
-	inc de
-	call sprite_init
+	call sprite_init_anim
 
 	ret
 
@@ -426,9 +422,9 @@ motion_step:
 	push de
 	ld hl, wBallSprite
 	ld de, anim_Ballder_rolling
-	ld a, [de]
-	inc de
-	call sprite_init
+	call sprite_init_anim
+	ldh a, [hTick] ; "random" initial frame
+	ld [wBallSprite.frame], a
 	pop de
 :
 
@@ -647,9 +643,7 @@ endr
 	; change to 'broken' sprite
 	ld hl, wBallSprite
 	ld de, anim_Ballder_stopped
-	ld a, [de]
-	inc de
-	call sprite_init
+	call sprite_init_anim
 :
 
 	jr Ball_draw
@@ -674,9 +668,11 @@ Ball_draw:
 
 
 ; @param HL: this
-; @param  A: frame_count
-; @param DE: sequence (pointer to first frame in sequence)
-sprite_init:
+; @param DE: anim (pointer to anim struct)
+; @mut: AF, DE, HL
+sprite_init_anim:
+	ld a, [de]
+	inc de
 	ld [hl+], a ; frame_count
 	xor a
 	ld [hl+], a ; frame
@@ -685,32 +681,7 @@ sprite_init:
 	ld a, d
 	ld [hl+], a ; seq.1
 
-	; read first frame, write sprite
-	ld a, [de]
-	inc de
-	ld [hl+], a
-	ld a, [de]
-	inc de
-	ld [hl+], a
-
 	ret
-
-
-; Set sprite to display frame from loaded sequence
-; @param HL: this
-; @param  D: frame
-; @mut: AF, E
-sprite_set_frame:
-	ld a, [hl+] ; frame_count
-	ld e, a
-	call _sprite_frame_loop_range ; A = frame
-
-	ld [hl+], a ; frame
-	ld e, [hl]  ; seq.0
-	inc hl
-	ld d, [hl] ; seq.1
-	inc hl
-	jr _sprite_display_frame
 
 
 ; Limit frame number to range of [0..frame_count].

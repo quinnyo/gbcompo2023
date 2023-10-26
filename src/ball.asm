@@ -4,16 +4,6 @@ include "maths.inc"
 include "gfxmap.inc"
 include "core/sprite.inc"
 
-; jrlez R, N
-; JR to N if (signed 16 bit) value in R is less than or equal to zero.
-macro jrlez
-	bit 7, HIGH(\1)
-	jr nz, \2
-	ld a, HIGH(\1)
-	or LOW(\1)
-	jr z, \2
-endm
-
 
 def BALL_DEFAULT_GRAVITY equ 3
 
@@ -419,10 +409,17 @@ motion_step:
 	; check Y velocity peaked
 	bit bBallStatOffScrTop, e
 	jr nz, :+ ; not peaked until on screen
-	jrlez bc, :+
-	; positive Y velocity
+
 	bit bBallStatPeaked, e
 	jr nz, :+ ; already set
+
+	; check Y velocity > 0
+	bit 7, b
+	jr nz, :+
+	ld a, b
+	or c
+	jr z, :+
+
 	set bBallStatPeaked, e
 
 	; change to 'going down' sprite

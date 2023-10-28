@@ -61,6 +61,7 @@ ISR_VBlank:
 	push hl
 
 	call hOAMCopyRoutine
+	call gfx_update
 	call audio_update
 
 	ld a, 1
@@ -86,6 +87,7 @@ EntryPoint:
 	di
 	xor a
 	ldh [hVBlankF], a
+	ldh [hTick], a
 	ld a, 1
 	ldh [hActiveROM], a
 
@@ -103,6 +105,7 @@ EntryPoint:
 	call oam_init
 	call input_init
 	call loado_init
+	call gfx_init
 	call gfx_load_default_font
 	call gfx_load_default_palettes
 	call Texto_init
@@ -152,6 +155,9 @@ MainLoop:
 ; @param A: mode ID
 Main_mode_change::
 	ld [wMode.current], a
+	ld a, 1
+	call gfx_fade_out
+	call gfx_fade_complete
 
 	di
 	xor a
@@ -162,6 +168,8 @@ Main_mode_change::
 	call Mode_init
 
 	ei
+	ld a, 1
+	call gfx_fade_in
 	jp MainLoop
 
 

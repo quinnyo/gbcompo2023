@@ -315,23 +315,18 @@ macro stfield
 endm
 
 
-; st STRUCT, INSTANCE, [LABEL_AFFIX = ::]
+; stalloc STRUCT, FIELD_PREFIX, FIELD_POSTFIX
 ; Create an instance of a struct thing. For use in e.g. a wram section.
 ; Creates labeled structure layout with statically allocated memory.
 ; STRUCT is the name of a struct declared with stdecl.
-; INSTANCE is the name of the instance root label.
-macro st
-	if _NARG == 3
-		def _LABEL_AFFIX equs "\3"
-	else
-		def _LABEL_AFFIX equs "::"
-	endc
-	\2{_LABEL_AFFIX}
+; FIELD_PREFIX and FIELD_POSTFIX are affixed to the start and end of the field labels
+macro stalloc
+	assert _NARG == 3
 	for i, \1_len
 		def _FNAME equs "{\1_{u:i}_name}"
 		def _FTYPE equ \1_{u:i}_type
 		def _FLEN equ \1_{u:i}_len
-		.{_FNAME}{_LABEL_AFFIX}
+		\2{_FNAME}\3
 		if _FLEN > 1
 			ds _FTYPE * _FLEN
 		elif _FTYPE == 1
@@ -343,7 +338,17 @@ macro st
 		endc
 		purge _FNAME, _FTYPE, _FLEN
 	endr
-	purge _LABEL_AFFIX
+endm
+
+
+; st STRUCT, INSTANCE
+; Create an instance of a struct thing. For use in e.g. a wram section.
+; Creates labeled structure layout with statically allocated memory.
+; STRUCT is the name of a struct declared with stdecl.
+; INSTANCE is the name of the instance root label.
+macro st
+	\2::
+	stalloc \1, ., ::
 endm
 
 

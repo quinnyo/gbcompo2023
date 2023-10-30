@@ -3,7 +3,10 @@ include "common.inc"
 
 section "SoundTest", rom0
 
+; @mut: AF, BC, DE, HL, ROMB
 SoundTest_init::
+	ld a, bank(TileData)
+	rst rom_sel
 	ld de, TileData
 	ld hl, $8800
 	ld bc, TileData.end - TileData
@@ -139,14 +142,12 @@ trig_music:
 	ret
 
 
-section "SoundTest State", wramx
+section "SoundTest State", wram0
 wSelection: db
 wMusSelection: db
 
 
 section "SoundTest Data", romx
-
-
 TileData:
 	dw `12321120
 	dw `01232110

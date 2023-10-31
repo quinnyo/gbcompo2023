@@ -250,8 +250,8 @@ gfx_palette_sync::
 	ld c, 1             ; make this the last iteration
 :
 	jr nc, .bcp_not_changed
+rept 4 ; 4 colors
 	WaitVRAM
-rept 4
 	ld a, [hl+]
 	ldh [rBCPD], a
 	ld a, [hl+]
@@ -295,8 +295,8 @@ endr
 	ld c, 1             ; make this the last iteration
 :
 	jr nc, .ocp_not_changed
+rept 4 ; 4 colors
 	WaitVRAM
-rept 4
 	ld a, [hl+]
 	ldh [rOCPD], a
 	ld a, [hl+]

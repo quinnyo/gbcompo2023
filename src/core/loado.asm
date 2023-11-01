@@ -7,16 +7,14 @@ include "core/loado.inc"
 
 
 section "wLoado", wram0
-	st Loado, wLoado
+	st Loadomachine, wLoado
 
 
 section "Loado", rom0
-
-
 loado_init::
 	xor a
 	ld hl, wLoado
-	ld c, Loado_sz
+	ld c, Loadomachine_sz
 :
 	ld [hl+], a
 	dec c

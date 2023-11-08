@@ -93,6 +93,25 @@ endc
 endm
 
 
+; Start a new jump table
+macro JumpSwitchReset
+	redef _JumpSwitchCount = 0
+endm
+
+
+; Add a branch to the jump table, verifying that indices are consecutive.
+; JumpSwitchBranch INDEX, DEST
+macro JumpSwitchBranch
+	assert _NARG == 2, "JumpSwitchBranch requires 2 args: INDEX, DEST"
+	if !def(_JumpSwitchCount)
+		JumpSwitchReset
+	endc
+	assert _JumpSwitchCount == (\1), "Non-consecutive branch index. Expected {u:_JumpSwitchCount}, got \1({u:\1})"
+	dw \2
+	def _JumpSwitchCount += 1
+endm
+
+
 /***********************************************************
 *                           SHRIMP: Shared Resource Import *
 ***********************************************************/

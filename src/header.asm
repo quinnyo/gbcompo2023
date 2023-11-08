@@ -32,19 +32,19 @@ endc
 
 
 section "IRQ_VBlank", rom0[$0040]
-	jp ISR_VBlank
+IRQ_VBlank: jp ISR_VBlank
 
-; section "IRQ_LCDSTAT", rom0[$0048]
-; 	jp ISR_audio_update
+; section "IRQ_LCDC", rom0[$0048]
+; IRQ_LCDC: reti
 
 ; section "IRQ_Timer", rom0[$0050]
-; 	jp ISR_audio_update
+; IRQ_Timer: reti
 
 ; section "IRQ_Serial", rom0[$0058]
-; 	reti
+; IRQ_Serial: reti
 
 ; section "IRQ_P1", rom0[$0060]
-; 	reti
+; IRQ_P1: reti
 
 
 section "Header", rom0[$0100]

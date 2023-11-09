@@ -345,6 +345,8 @@ world_load_things:
 	ld a, [de] ; ThingDef.oam_attr
 	inc de
 	ld [hl+], a ; ThingInstance.attr
+	xor a
+	ld [hl+], a ; ThingInstance.collider
 
 	dec c
 	jr nz, .loop

@@ -56,7 +56,9 @@ Game::
 
 	call world_display_tilemap
 
+	call Collide_init
 	call things_init
+	call things_init_colliders
 	call Ball_init
 
 if def(DEBUG_BALL)
@@ -188,13 +190,13 @@ _ball_update:
 
 	; collide things
 	ld a, [wBall + Ball_x + 1]
-	inc a
 	ld b, a
 	ld a, [wBall + Ball_y + 1]
-	inc a
 	ld c, a
 	ld e, BallCollideThingRadius
-	call things_collide_ball
+	call Collide_set_subject_missile
+	call Collide_all_subject
+	call things_think
 
 	call things_count
 	ld a, d

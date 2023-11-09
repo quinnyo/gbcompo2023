@@ -56,6 +56,7 @@ def ThingsMax equ 20
 		stfield x ; X position (screen pixels)
 		stfield t ; thing type / (initial) tile
 		stfield attr ; OAM attribute flags
+		stfield collider
 	stclose
 
 	stdecl World

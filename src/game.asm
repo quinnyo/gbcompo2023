@@ -170,18 +170,7 @@ _ball_update:
 
 	call Ball_process
 
-	; get changed ball status
-	ld a, [wGame.ballstat]
-	ld e, a
-	ld a, [wBall.status]
-	ld d, a
-	xor e
-	and d
-
-	and fBallStatShotEnded
-	jr z, :+
-	call .show_shot_end_prompt
-:
+	call _check_ball_status
 
 	; Check if ball stuck / stopped / shot ended
 	ld a, [wBall.status]
@@ -219,22 +208,37 @@ _ball_update:
 	ret
 
 
-.show_shot_end_prompt:
-	ld a, [wGame.status]
-	set bStatusShotEnded, a
-	ld [wGame.status], a
-
+_check_ball_status:
+	; get changed ball status
+	ld a, [wGame.ballstat]
+	ld e, a
 	ld a, [wBall.status]
+	ld d, a
+	xor e
+	and d
+
+	and fBallStatShotEnded
+	ret z
+
+	; shot ended...
+	ld hl, wGame.status
+	set bStatusShotEnded, [hl]
+
+	; handle OOB or Stopped
 	bit bBallStatOOB, a
-	jr z, :+
+	jr nz, .ball_oob
+	; Ball Stopped
+	ld de, sStatusNextShot
+	ld bc, sStatusNextShot_len
+	call build_status_text
+	ret
+.ball_oob
+	; OOB SFX
+	ld hl, snd_ball_oob
+	call sound_play
 	; show OOB statusline
 	ld de, sStatusOOB
 	ld bc, sStatusOOB_len
-	call build_status_text
-	ret
-:
-	ld de, sStatusNextShot
-	ld bc, sStatusNextShot_len
 	call build_status_text
 	ret
 

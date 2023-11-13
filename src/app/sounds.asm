@@ -102,6 +102,24 @@ snd_ball_hit::
 	ScEnd
 
 
+snd_ball_oob::
+	ScPart CH1, 7, :+
+	ScReg rNR10, $4B
+	ScReg rNR11, 32
+	ScReg rNR12, $F1
+	ScReg rNR13, low(F05)
+	ScReg rNR14, high(F05) | $C0
+	ScEnd
+:
+	ScPart CH1, 14
+	ScReg rNR10, $4B
+	ScReg rNR11, 32
+	ScReg rNR12, $F1
+	ScReg rNR13, low(C04)
+	ScReg rNR14, high(C04) | $C0
+	ScEnd
+
+
 /***********************************************************
 *                                              Sound Table *
 ***********************************************************/

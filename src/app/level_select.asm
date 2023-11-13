@@ -120,7 +120,7 @@ LevelSelect_refresh0:
 
 LevelSelect_refresh1:
 	ld a, [wSettings.level]
-	call map_title_by_index
+	call Maps_index_title
 	push hl
 
 	; "Title"

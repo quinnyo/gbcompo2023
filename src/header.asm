@@ -261,35 +261,24 @@ wMode::
 * MAPS
 **********************************************************/
 
-
 def MAP_TITLE_MAX_LENGTH equ 15
 
-rsreset
-def MAP_INFO_DATA       rw 1
-def MAP_INFO_TITLE_LEN  rb 1
-def MAP_INFO_TITLE      rb MAP_TITLE_MAX_LENGTH
-def MAP_INFO_SIZE       rb 0
-
 def MAP_COUNT = 0 ; number of levels defined
-
-export MAP_COUNT, MAP_INFO_SIZE, MAP_TITLE_MAX_LENGTH
+export MAP_COUNT
 
 ; MapDef ID, TITLE
 macro MapDef
 	assert charlen(\2) <= MAP_TITLE_MAX_LENGTH
 
-	def _LABEL equs "map_\1"
-	def _SRC equs "res/map/\1.asm"
 	pushs
-	include "{_SRC}"
+	include "res/map/\1.asm"
 	pops
 
 	def MAP_{u:MAP_COUNT} equs "\1"
 	def MAP_{u:MAP_COUNT}_TITLE equs \2
+	def MAP_{u:MAP_COUNT}_TITLE_LEN equ charlen("{MAP_{u:MAP_COUNT}_TITLE}")
 
 	def MAP_COUNT += 1
-
-	purge _LABEL, _SRC
 endm
 
 
@@ -302,57 +291,111 @@ endm
 
 	MapDef win, "The End"
 
+
 section "Maps", rom0
 
 Maps::
-	.count: db {MAP_COUNT}
-
-	.map_info_start:
+	.map_data_bank:
 for i, {MAP_COUNT}
-	def _TITLE equs "{MAP_{u:i}_TITLE}"
-	def _TITLE_LEN equ charlen("{_TITLE}")
-	def _TITLE_PADDING equ MAP_TITLE_MAX_LENGTH - _TITLE_LEN
-	println "MapInfo({u:i}) \"{_TITLE}\" ({_TITLE_LEN}+{u:_TITLE_PADDING})"
+	db bank(map_{MAP_{u:i}})
+endr
 
-	.map{u:i}_data: dw map_{MAP_{u:i}}
-	.map{u:i}_title_len: db _TITLE_LEN
-	.map{u:i}_title: db "{_TITLE}"
-	rept _TITLE_PADDING
-		db "~"
-	endr
+	.map_data:
+for i, {MAP_COUNT}
+	dw map_{MAP_{u:i}}
+endr
 
-	purge _TITLE, _TITLE_LEN, _TITLE_PADDING
+	.map_title:
+for i, {MAP_COUNT}
+	dw .map{u:i}_title_data
+endr
+
+for i, {MAP_COUNT}
+	.map{u:i}_title_data:
+	db MAP_{u:i}_TITLE_LEN
+	db "{MAP_{u:i}_TITLE}"
 endr
 
 
+
+; @param A: map index
+; @ret A: clamped map index
+; @mut: AF
+Maps_clamp_index::
+	cp MAP_COUNT
+	ret c
+	ld a, MAP_COUNT - 1
+	ret
+
+
+; Switch to map data ROM bank and return map data pointer.
+; @param A: map index
+; @ret HL: map data pointer
+; @mut: AF, C, HL
+Maps_data_access::
+	ld c, a
+	call Maps_index_data_bank
+	rst rom_sel
+	ld a, c
+	jr Maps_index_data
+
+
 ; @param A: index
-; @ret HL: address of map info for map with given index
-; @mut: BC
-map_info_by_index::
-	ld hl, Maps.map_info_start
-	ld bc, MAP_INFO_SIZE
-	jr _offset_by_index
+; @ret A: map data bank
+; @mut: AF, HL
+Maps_index_data_bank::
+	ld hl, Maps.map_data_bank
+	jr _Maps_index_byte
+
+
+; @param A: index
+; @ret HL: address of map data
+; @mut: AF, HL
+Maps_index_data::
+	ld hl, Maps.map_data
+	jr _Maps_index_word
 
 
 ; @param A: index
 ; @ret HL: address of map title structure for map with given index
-; @mut: BC
-map_title_by_index::
-	ld hl, Maps.map_info_start + MAP_INFO_TITLE_LEN
-	ld bc, MAP_INFO_SIZE
-	jr _offset_by_index
+; @mut: AF, HL
+Maps_index_title::
+	ld hl, Maps.map_title
+	jr _Maps_index_word
 
 
+; Read a byte from a Maps array.
 ; @param A: index
-; @param HL: address of index 0
-; @param BC: stride
-; @ret HL: address of map title structure for map with given index
-; @mut: BC
-_offset_by_index:
-	cp 0
-	ret z ; A == 0
-:
-	add hl, bc
-	dec a
-	jr nz, :-
+; @param HL: base address
+; @ret HL: word
+; @mut: AF, HL
+_Maps_index_byte:
+	call Maps_clamp_index
+	add l
+	ld l, a
+	adc h
+	sub l
+	ld h, a
+
+	ld a, [hl]
+	ret
+
+
+; Read a word from a Maps array
+; @param A: index
+; @param HL: base address
+; @ret HL: word
+; @mut: AF, HL
+_Maps_index_word:
+	call Maps_clamp_index
+	add a ; double index ==> indexing words
+	add l
+	ld l, a
+	adc h
+	sub l
+	ld h, a
+
+	ld a, [hl+]
+	ld h, [hl]
+	ld l, a
 	ret

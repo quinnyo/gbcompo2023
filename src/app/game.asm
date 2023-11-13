@@ -48,10 +48,9 @@ Game::
 
 	call world_init
 	ld a, [wSettings.level]
-	call map_info_by_index
-	ld a, [hl+]
-	ld e, a
-	ld d, [hl]
+	call Maps_data_access
+	ld e, l
+	ld d, h
 	call world_load_map
 
 	call world_display_tilemap

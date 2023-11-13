@@ -28,7 +28,7 @@ world_init::
 	call mem_copy
 
 	ld hl, wWorld.things
-	ld c, World_things_sz
+	ld c, World_things__sz
 	ld a, 255 ; thing.hits == 255 is inactive
 	call mem_fill_byte
 

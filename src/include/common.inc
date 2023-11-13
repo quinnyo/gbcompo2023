@@ -314,18 +314,18 @@ macro stfield
 			fail "stfield: bad args"
 		endc
 
-		def _IPFX equs "{_STRUCTNAME}_{u:_STRUCT_FIELD_COUNT}"
+		def _IPFX equs "{_STRUCTNAME}__{u:_STRUCT_FIELD_COUNT}"
 		def {_IPFX} equ _STRUCT_SIZE
-		def {_IPFX}_type equ _TYPE
-		def {_IPFX}_len equ _LEN
-		def {_IPFX}_sz equ _TYPE * _LEN
-		def {_IPFX}_name equs "{_NAME}"
+		def {_IPFX}__type equ _TYPE
+		def {_IPFX}__len equ _LEN
+		def {_IPFX}__sz equ _TYPE * _LEN
+		def {_IPFX}__name equs "{_NAME}"
 		def _PFX equs "{_STRUCTNAME}_{_NAME}"
 		def {_PFX} equ _STRUCT_SIZE
-		def {_PFX}_type equ _TYPE
-		def {_PFX}_len equ _LEN
-		def {_PFX}_sz equ _TYPE * _LEN
-		def {_PFX}_i equ _STRUCT_FIELD_COUNT
+		def {_PFX}__type equ _TYPE
+		def {_PFX}__len equ _LEN
+		def {_PFX}__sz equ _TYPE * _LEN
+		def {_PFX}__i equ _STRUCT_FIELD_COUNT
 		redef _STRUCT_SIZE = _STRUCT_SIZE + _TYPE * _LEN
 		redef _STRUCT_FIELD_COUNT = _STRUCT_FIELD_COUNT + 1
 
@@ -342,9 +342,9 @@ endm
 macro stalloc
 	assert _NARG == 3
 	for i, \1_len
-		def _FNAME equs "{\1_{u:i}_name}"
-		def _FTYPE equ \1_{u:i}_type
-		def _FLEN equ \1_{u:i}_len
+		def _FNAME equs "{\1__{u:i}__name}"
+		def _FTYPE equ \1__{u:i}__type
+		def _FLEN equ \1__{u:i}__len
 		\2{_FNAME}\3
 		if _FLEN > 1
 			ds _FTYPE * _FLEN

@@ -145,10 +145,10 @@ things_count::
 	ld h, a
 
 	ld a, h
-	cp high(wWorld.things + World_things_sz)
+	cp high(wWorld.things + World_things__sz)
 	jr nz, .loop_things
 	ld a, l
-	cp low(wWorld.things + World_things_sz)
+	cp low(wWorld.things + World_things__sz)
 	jr nz, .loop_things
 
 	ld a, [wThings.alive]
@@ -203,10 +203,10 @@ things_draw::
 
 .continue
 	ld a, d
-	cp high(wWorld.things + World_things_sz)
+	cp high(wWorld.things + World_things__sz)
 	jr nz, .loop_things
 	ld a, e
-	cp low(wWorld.things + World_things_sz)
+	cp low(wWorld.things + World_things__sz)
 	jr nz, .loop_things
 
 	call oam_next_store

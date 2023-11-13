@@ -69,8 +69,8 @@ VMEMCOPY       n:word    (3)
 	Copy `n` bytes to destination in VRAM. Src persists.
 ***********************************************************/
 
-if !def(LOADO_INC)
-def LOADO_INC equ 1
+if !def(CORE_LOADO_INC)
+def CORE_LOADO_INC equ 1
 
 include "common.inc"
 
@@ -142,4 +142,4 @@ macro LoadocodeROMB
 endm
 
 
-endc ; LOADO_INC
+endc ; CORE_LOADO_INC

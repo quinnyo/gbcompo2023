@@ -1,5 +1,5 @@
-if !def(BALL_INC)
-def BALL_INC equ 1
+if !def(APP_BALL_INC)
+def APP_BALL_INC equ 1
 
 include "common.inc"
 
@@ -58,4 +58,4 @@ def fBallStatOOB        equ 1 << bBallStatOOB
 def fBallStatShotEnded  equ fBallStatStopped | fBallStatOOB
 def fBallStatHeading    equ $C0 ; mask heading bits
 
-endc ; BALL_INC
+endc ; APP_BALL_INC

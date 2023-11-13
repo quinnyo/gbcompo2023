@@ -1,5 +1,5 @@
-if !def(WORLD_INC)
-def WORLD_INC equ 1
+if !def(APP_WORLD_INC)
+def APP_WORLD_INC equ 1
 
 include "common.inc"
 
@@ -79,4 +79,4 @@ def ThingsMax equ 20
 		stfield things_count ; The number of Things in the scene.
 	stclose
 
-endc ; WORLD_INC
+endc ; APP_WORLD_INC

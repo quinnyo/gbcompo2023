@@ -226,6 +226,9 @@ Ball_launch::
 	ld de, anim_Ballder_up
 	call sprite_init_anim
 
+	ld hl, snd_ball_hit
+	call sound_play
+
 	ret
 
 
@@ -644,6 +647,14 @@ endr
 	ld hl, wBallSprite
 	ld de, anim_Ballder_stopped
 	call sprite_init_anim
+:
+
+	; rolling sound effect thing
+	ld a, [wBall.collide]
+	bit bCollideTerrainDown, a
+	jr z, :+
+	ld hl, snd_ball_tick
+	call sound_try_play
 :
 
 	jr Ball_draw

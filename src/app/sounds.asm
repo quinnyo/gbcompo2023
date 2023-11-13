@@ -85,11 +85,20 @@ snd_ui_nav_exit::
 *                                           Ballder Sounds *
 ***********************************************************/
 snd_ball_tick::
-	ScPart CH2, 2
-	ScReg rNR21, 59 ; duty 12.5%, length 57
+	ScPart CH2, 19
+	ScReg rNR21, 52
 	ScReg rNR22, $F0
-	ScReg rNR23, low(F03)
-	ScReg rNR24, high(F03) | $C0
+	ScReg rNR23, low(C03)
+	ScReg rNR24, high(C03) | $C0
+	ScEnd
+
+
+snd_ball_hit::
+	ScPart CH4, 60
+	ScReg rNR41, 35
+	ScReg rNR42, $F2
+	ScReg rNR43, $80
+	ScReg rNR44, $80
 	ScEnd
 
 

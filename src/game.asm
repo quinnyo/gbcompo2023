@@ -192,6 +192,7 @@ _ball_update:
 	and a
 	jr z, :+
 	; hit things!
+	call _things_smashed
 	call build_status_stats
 
 	ld a, [wThings.alive]
@@ -241,6 +242,23 @@ _check_ball_status:
 	ld bc, sStatusOOB_len
 	call build_status_text
 	ret
+
+
+; trigger thing smashed effects
+; @mut: AF, C, DE, HL
+_things_smashed:
+	ld a, [wBall.x + 1]
+	ld hl, snd_smash_03
+	bit 3, a
+	jp nz, sound_play
+	ld hl, snd_smash_02
+	bit 2, a
+	jp nz, sound_play
+	ld hl, snd_smash_01
+	bit 1, a
+	jp nz, sound_play
+	ld hl, snd_smash_04
+	jp sound_play
 
 
 start_next_shot:

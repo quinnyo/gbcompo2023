@@ -148,6 +148,42 @@ snd_ball_thump::
 	ScEnd
 
 
+snd_smash_01::
+	ScPart CH4, 60
+	ScReg rNR41, 0
+	ScReg rNR42, $E3
+	ScReg rNR43, $88 | 1
+	ScReg rNR44, $80
+	ScEnd
+
+
+snd_smash_02::
+	ScPart CH4, 60
+	ScReg rNR41, 0
+	ScReg rNR42, $E4
+	ScReg rNR43, $80 | 1
+	ScReg rNR44, $80
+	ScEnd
+
+
+snd_smash_03::
+	ScPart CH4, 60
+	ScReg rNR41, 0
+	ScReg rNR42, $D2
+	ScReg rNR43, $88 | 2
+	ScReg rNR44, $80
+	ScEnd
+
+
+snd_smash_04::
+	ScPart CH4, 60
+	ScReg rNR41, 0
+	ScReg rNR42, $F4
+	ScReg rNR43, $80 | 0
+	ScReg rNR44, $80
+	ScEnd
+
+
 /***********************************************************
 *                                              Sound Table *
 ***********************************************************/

@@ -605,7 +605,7 @@ motion_step:
 ; @mut: AF, C, DE, HL
 _ground_impact:
 	ld hl, snd_ball_thump
-	call sound_play
+	call sound_try_play
 	ret
 
 

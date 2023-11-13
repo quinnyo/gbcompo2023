@@ -1,5 +1,5 @@
 include "common.inc"
-include "world.inc"
+include "app/world.inc"
 include "gfxmap.inc"
 
 section "ThingsState", wram0

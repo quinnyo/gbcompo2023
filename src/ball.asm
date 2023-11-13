@@ -1,4 +1,4 @@
-include "ball.inc"
+include "app/ball.inc"
 include "common.inc"
 include "maths.inc"
 include "gfxmap.inc"

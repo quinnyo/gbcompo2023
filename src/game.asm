@@ -1,5 +1,5 @@
 include "common.inc"
-include "ball.inc"
+include "app/ball.inc"
 include "app/shotctl.inc"
 
 def bStatusUpdate equ 0

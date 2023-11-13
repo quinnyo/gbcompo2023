@@ -169,6 +169,7 @@ audio_channels_cut::
 
 
 ; Stop playback, clear state and unmute music
+; @mut: AF, C, DE
 sound_stop::
 	; clear sound active flag
 	ldh a, [hAudioStatus]
@@ -195,6 +196,7 @@ sound_init::
 
 ; Start sound playback if there is no active sound.
 ; @param HL: address of Sound Data
+; @mut: AF, C, DE, HL
 sound_try_play::
 	ldh a, [hSound.timer]
 	and a
@@ -202,6 +204,7 @@ sound_try_play::
 
 ; Start sound playback, interrupting active sound (if any)
 ; @param HL: address of Sound Data
+; @mut: AF, C, DE, HL
 sound_play::
 	call sound_stop
 sound_force_play:
@@ -233,6 +236,7 @@ sound_force_play:
 ; Play a sound after a delay period.
 ; @param A: delay ticks
 ; @param HL: address of sound to play
+; @mut: A
 sound_play_delayed::
 	ldh [hSoundQueueTimer], a
 	ld a, l

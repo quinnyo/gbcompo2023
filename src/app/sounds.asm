@@ -87,7 +87,7 @@ snd_ui_nav_exit::
 snd_ball_tick::
 	ScPart CH2, 19
 	ScReg rNR21, 52
-	ScReg rNR22, $F0
+	ScReg rNR22, $80
 	ScReg rNR23, low(C03)
 	ScReg rNR24, high(C03) | $C0
 	ScEnd
@@ -95,7 +95,7 @@ snd_ball_tick::
 
 snd_ball_hit::
 	ScPart CH4, 60
-	ScReg rNR41, 35
+	ScReg rNR41, 0
 	ScReg rNR42, $F2
 	ScReg rNR43, $80
 	ScReg rNR44, $80
@@ -117,6 +117,34 @@ snd_ball_oob::
 	ScReg rNR12, $F1
 	ScReg rNR13, low(C04)
 	ScReg rNR14, high(C04) | $C0
+	ScEnd
+
+
+snd_ball_thump::
+	ScPart CH2, 5, :+
+	ScReg rNR21, 0
+	ScReg rNR22, $A2
+	ScReg rNR23, low(C03)
+	ScReg rNR24, high(C03) | $F0
+	ScEnd
+:
+	ScPart CH1, 6, :+
+	ScReg rNR10, $4B
+	ScReg rNR11, $40
+	ScReg rNR12, $C2
+	ScReg rNR13, low(F03)
+	ScReg rNR14, high(F03) | $C0
+	ScEnd
+:
+	ScPart CH2 | CH4, 60
+	ScReg rNR21, 0
+	ScReg rNR22, $A3
+	ScReg rNR23, low(Ds3)
+	ScReg rNR24, high(Ds3) | $F0
+	ScReg rNR41, 0
+	ScReg rNR42, $92
+	ScReg rNR43, $80
+	ScReg rNR44, $80
 	ScEnd
 
 

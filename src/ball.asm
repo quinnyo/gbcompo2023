@@ -566,10 +566,18 @@ motion_step:
 	inc a ; must use (pY + 1) as ball should never be below surface from stepped motion
 	ld c, a
 	call collide_terrain
-	ld a, d
-	ld [wBall.collide], a
+	ld hl, wBall.collide
+	ld a, [hl] ; A = old collide
+	ld [hl], d
+	; get changed collide bits
+	xor d
+	and d
+	and fCollideTerrainDown
+	call nz, _ground_impact
 
 	; handle ground contact
+	ld a, [wBall.collide]
+	ld d, a
 	bit bCollideTerrainDown, d
 	jr z, .ground_contact_done
 	; sliding "friction"
@@ -590,6 +598,14 @@ motion_step:
 	ld [hl-], a
 	ld [hl], c
 .ground_contact_done
+	ret
+
+
+; trigger ground impact effects
+; @mut: AF, C, DE, HL
+_ground_impact:
+	ld hl, snd_ball_thump
+	call sound_play
 	ret
 
 

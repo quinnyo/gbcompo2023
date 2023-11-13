@@ -69,7 +69,7 @@ def ThingsMax equ 20
 		stfield things, ThingInstance_sz * ThingsMax
 	stclose
 
-	stdecl MapInfo
+	stdecl LoadedMapCache
 		stfield source, w ; Address of loaded map.
 		stfield columns ; The horizontal size of the loaded map, in tiles.
 		stfield rows ; The vertical size of the loaded map, in tiles.

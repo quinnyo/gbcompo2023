@@ -13,7 +13,7 @@ include "app/world.inc"
 section "World State", wram0
 
 	st World, wWorld
-	st MapInfo, wMap
+	st LoadedMapCache, wMap
 
 wNextChunk: dw
 

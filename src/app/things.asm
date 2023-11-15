@@ -2,19 +2,24 @@ include "common.inc"
 include "app/world.inc"
 include "gfxmap.inc"
 
+
 section "ThingsState", wram0
 wThings::
-	.alive:: db ; number of things that haven't been hit
-	.dead:: db ; number of things that have been hit
+	.just_hit::  db ; number of things that were hit in the most recent update
+	.just_died:: db ; number of things that died in the most recent update
+	.alive::  db ; number of things that are alive
 
 
 section "ThingsImpl", rom0
 ; Initialise Things manager. Call this after loading the map.
 things_init::
 	xor a
-	ld [wThings.alive], a
-	ld [wThings.dead], a
-	call things_count
+	ld hl, wThings.just_hit
+	ld [hl+], a       ; just_hit
+	ld [hl+], a       ; just_died
+	ld a, [wMap.things_count]
+	ld [hl+], a       ; alive
+
 	ret
 
 
@@ -22,7 +27,7 @@ things_init_colliders::
 	ld hl, wWorld.things
 	ld e, ThingsMax
 .loop_things
-	ld a, [hl+]       ; ThingInstance.hits
+	ld a, [hl+]       ; ThingInstance.status
 	ld d, a
 	ld a, [hl+]       ; ThingInstance.y
 	ld c, a
@@ -31,8 +36,8 @@ things_init_colliders::
 	inc hl            ; ThingInstance.t
 	inc hl            ; ThingInstance.attr
 
-	bit 7, d
-	jr nz, .continue
+	bit bThingStatus_VOID, d
+	jr nz, .loop_things_continue
 
 	push hl           ; TODO: not this
 	call Collide_add_box
@@ -56,7 +61,7 @@ things_init_colliders::
 
 	ld [hl], d        ; store collider index
 
-.continue
+.loop_things_continue
 	inc hl            ; ThingInstance.collider
 	dec e
 	jr nz, .loop_things
@@ -64,79 +69,29 @@ things_init_colliders::
 	ret
 
 
+; Main Thing per-tick process routine.
+; @mut: AF, BC, DE, HL
 things_think::
-	ld bc, wWorld.things
+	call _things_process_collisions
+
+	ld bc, 0
+	ld hl, wWorld.things
 	ld e, ThingsMax
 .loop_things
-	ld a, [bc]       ; ThingInstance.hits
-	ld d, a
-	bit 7, d
-	jr z, :+
-	ld a, ThingInstance_sz
-	add c
-	ld c, a
-	adc b
-	sub c
-	ld b, a
-	jr .continue
-:
+	bit bThingStatus_VOID, [hl]
+	jr nz, .loop_things_continue
 
-	push bc                  ; LAZY
+	bit bThingStatus_EV_DIE, [hl]
+	jr z, .ev_die_done
+	inc b             ; just_died++
+.ev_die_done
 
-	; --> collider
-	ld a, ThingInstance_collider - ThingInstance_hits
-	add c
-	ld c, a
-	adc b
-	sub c
-	ld b, a
+	bit bThingStatus_EV_HIT, [hl]
+	jr z, .ev_hit_done
+	inc c             ; just_hit++
+.ev_hit_done
 
-	ld a, [bc]        ; ThingInstance.collider
-	inc bc ; next thing
-
-	; check most recent result (bit 0)
-	call Collide_get_status
-	pop hl                  ; LAZY
-	bit 0, a
-	jr z, .continue   ; no collide
-	bit 1, a
-	jr nz, .continue  ; already colliding
-	ld a, [hl]
-	cp 2
-	jr nc, .continue
-	inc a
-	ld [hl], a
-
-.continue
-	dec e
-	jr nz, .loop_things
-
-	ret
-
-
-; Count all the things (as hit or not) and update the values in wThings.
-; @ret B: Number of things that haven't been hit
-; @ret C: Number of things that have been hit
-; @ret D: Number of things that have been hit since last count
-; @mut: A, HL
-things_count::
-	ld hl, wWorld.things
-	ld b, 0
-	ld c, 0
-.loop_things
-	ld a, [hl]
-	bit 7, a
-	jr nz, .continue  ; inactive/empty
-
-	cp 1
-	jr c, .zero
-	; > 0
-	inc c
-	jr .continue
-.zero
-	inc b
-
-.continue
+.loop_things_continue
 	ld a, ThingInstance_sz
 	add l
 	ld l, a
@@ -144,20 +99,17 @@ things_count::
 	sub l
 	ld h, a
 
-	ld a, h
-	cp high(wWorld.things + World_things__sz)
-	jr nz, .loop_things
-	ld a, l
-	cp low(wWorld.things + World_things__sz)
+	dec e
 	jr nz, .loop_things
 
-	ld a, [wThings.alive]
-	sub b
-	ld d, a
-	ld a, b
-	ld [wThings.alive], a
+	ld hl, wThings.just_hit
 	ld a, c
-	ld [wThings.dead], a
+	ld [hl+], a
+	ld a, b
+	ld [hl+], a
+	ld a, [hl]
+	sub b
+	ld [hl], a
 
 	ret
 
@@ -165,50 +117,115 @@ things_count::
 ; Draw all the things
 ; @mut: A, B, DE, HL
 things_draw::
-	ld de, wWorld.things
-	call oam_next_recall
+	ld bc, wWorld.things
+	ld e, ThingsMax
 .loop_things
-	ld a, [de] ; ThingInstance.hits
-	bit 7, a
+	ld a, [bc] ; ThingInstance.status
+	bit bThingStatus_VOID, a
 	jr z, .draw
 	ld a, ThingInstance_sz
-	add e
-	ld e, a
-	adc d
-	sub e
-	ld d, a
-	jr .continue
+	add c
+	ld c, a
+	adc b
+	sub c
+	ld b, a
+	jr .loop_things_continue
 
 .draw
-	inc de
-	ld b, a
+	call oam_next_recall
 
-	ld a, [de] ; ThingInstance.y
-	inc de
+	inc bc ; status
+	ld a, [bc] ; ThingInstance.y
+	inc bc
 	add OAM_Y_OFS
 	ld [hl+], a
-	ld a, [de] ; ThingInstance.x
-	inc de
+	ld a, [bc] ; ThingInstance.x
+	inc bc
 	add OAM_X_OFS
 	ld [hl+], a
-	ld a, [de] ; ThingInstance.t
-	inc de
+	ld a, [bc] ; ThingInstance.t
+	inc bc
 	add tThings
-	add b
 	ld [hl+], a
-	ld a, [de] ; ThingInstance.attr
-	inc de
+	ld a, [bc] ; ThingInstance.attr
+	inc bc
 	ld [hl+], a
-	inc de     ; ThingInstance.collider
-
-.continue
-	ld a, d
-	cp high(wWorld.things + World_things__sz)
-	jr nz, .loop_things
-	ld a, e
-	cp low(wWorld.things + World_things__sz)
-	jr nz, .loop_things
+	inc bc     ; ThingInstance.collider
 
 	call oam_next_store
+
+.loop_things_continue
+	dec e
+	jr nz, .loop_things
+
+	ret
+
+
+; Check each thing's collision status.
+; Apply hits and raise relevant event status flags.
+; @mut: AF, BC, DE, HL
+_things_process_collisions::
+	ld bc, wWorld.things
+	ld e, ThingsMax
+.loop_things
+	ld a, [bc]       ; ThingInstance.status
+	bit bThingStatus_VOID, a
+	jr z, :+
+	ld a, ThingInstance_sz
+	add c
+	ld c, a
+	adc b
+	sub c
+	ld b, a
+	jr .loop_things_continue
+:
+	; clear event flags and store status
+	and ~fThingStatus_EV
+	ld [bc], a
+
+	push bc                  ; LAZY
+
+	; --> collider
+	ld a, ThingInstance_collider - ThingInstance_status
+	add c
+	ld c, a
+	adc b
+	sub c
+	ld b, a
+
+	ld a, [bc]        ; ThingInstance.collider
+	inc bc            ; next thing
+
+	; check most recent result (bit 0)
+	call Collide_get_status
+	pop hl                  ; LAZY
+	bit 0, a
+	jr z, .loop_things_continue   ; no collide
+	bit 1, a
+	jr nz, .loop_things_continue  ; already colliding
+
+.stat_update
+	; keep non-hits status in D
+	ld a, [hl]
+	and ~fThingStatus_HITS
+	ld d, a
+	set bThingStatus_EV_HIT, d
+
+	; get status again, isolate hits
+	ld a, [hl]
+	and fThingStatus_HITS
+	jr z, .stat_done
+	dec a
+	jr nz, .stat_done
+	; Thing has been destroyed
+	set bThingStatus_EV_DIE, d
+.stat_done
+	; store recombined hits (A) with non-hits status (D)
+	or d
+	ld [hl], a
+
+.loop_things_continue
+	dec e
+	jr nz, .loop_things
 
 	ret

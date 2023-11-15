@@ -50,13 +50,24 @@ def MapChunk_Loado equ 5
 
 def ThingsMax equ 20
 
+def bThingStatus_HITS0     equ 0
+def bThingStatus_HITS1     equ 1
+def bThingStatus_EV_HIT    equ 5 ; Thing has been hit
+def bThingStatus_EV_DIE    equ 6 ; Thing has died...
+def bThingStatus_VOID      equ 7 ; Set to indicate Thing doesn't exist or is otherwise inactive.
+def fThingStatus_HITS    equ $03 ; Mask 'HITS' part of Thing status.
+def fThingStatus_EV_HIT  equ $20 ; Thing has been hit
+def fThingStatus_EV_DIE  equ $40 ; Thing has died...
+def fThingStatus_EV      equ $60 ; Mask all event bits
+def fThingStatus_VOID    equ $80 ; Mask 'VOID' bit of Thing status.
+
 	stdecl ThingInstance
-		stfield hits ; hit counter / status
-		stfield y ; Y position (screen pixels)
-		stfield x ; X position (screen pixels)
-		stfield t ; thing type / (initial) tile
-		stfield attr ; OAM attribute flags
-		stfield collider
+		stfield status    ; status, hitpoints
+		stfield y         ; Y position (screen pixels)
+		stfield x         ; X position (screen pixels)
+		stfield t         ; thing type / (initial) tile
+		stfield attr      ; OAM attribute flags
+		stfield collider  ; index/ID of Thing's Collider
 	stclose
 
 	stdecl World

@@ -29,7 +29,7 @@ world_init::
 
 	ld hl, wWorld.things
 	ld c, World_things__sz
-	ld a, 255 ; thing.hits == 255 is inactive
+	ld a, fThingStatus_VOID
 	call mem_fill_byte
 
 	ret
@@ -330,23 +330,26 @@ world_load_tilemap:
 world_load_things:
 	ld hl, wWorld.things
 .loop
+	ld a, [de]        ; ThingDef.meta
+	inc de
+	; only one type of thing...
+; _add_tile_object_thing:
+	ld a, 1           ; 1 hitpoint
+	ld [hl+], a       ; ThingInstance.status
+	ld a, [de]        ; ThingDef.y
+	inc de
+	ld [hl+], a       ; ThingInstance.y
+	ld a, [de]        ; ThingDef.x
+	inc de
+	ld [hl+], a       ; ThingInstance.x
+	ld a, [de]        ; ThingDef.t
+	inc de
+	ld [hl+], a       ; ThingInstance.t
+	ld a, [de]        ; ThingDef.oam_attr
+	inc de
+	ld [hl+], a       ; ThingInstance.attr
 	xor a
-	ld [hl+], a ; ThingInstance.hits
-	inc de ; ThingDef.meta
-	ld a, [de] ; ThingDef.y
-	inc de
-	ld [hl+], a ; ThingInstance.y
-	ld a, [de] ; ThingDef.x
-	inc de
-	ld [hl+], a ; ThingInstance.x
-	ld a, [de] ; ThingDef.t
-	inc de
-	ld [hl+], a ; ThingInstance.t
-	ld a, [de] ; ThingDef.oam_attr
-	inc de
-	ld [hl+], a ; ThingInstance.attr
-	xor a
-	ld [hl+], a ; ThingInstance.collider
+	ld [hl+], a       ; ThingInstance.collider
 
 	dec c
 	jr nz, .loop

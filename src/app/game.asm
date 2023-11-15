@@ -184,26 +184,23 @@ _ball_update:
 	ld e, BallCollideThingRadius
 	call Collide_set_subject_missile
 	call Collide_all_subject
-	call things_think
 
-	call things_count
-	ld a, d
+	; update things
+	call things_think
+	ld a, [wThings.just_died]
 	and a
-	jr z, :+
-	; hit things!
+	jr z, .things_done
 	call _things_smashed
 	call build_status_stats
-
 	ld a, [wThings.alive]
 	cp 0
-	jr nz, :+
+	jr nz, .things_done
 	ld de, msgAllDestroyed
 	call draw_msg_box
 	ld a, [wGame.status]
 	set bStatusClear, a
 	ld [wGame.status], a
-
-: ; /hit things!
+.things_done
 
 	ret
 

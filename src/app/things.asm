@@ -25,7 +25,8 @@ things_init::
 
 things_init_colliders::
 	ld hl, wWorld.things
-	ld e, ThingsMax
+	ld a, [wMap.things_count]
+	ld e, a
 .loop_things
 	ld a, [hl+]       ; ThingInstance.status
 	ld d, a
@@ -76,7 +77,8 @@ things_think::
 
 	ld bc, 0
 	ld hl, wWorld.things
-	ld e, ThingsMax
+	ld a, [wMap.things_count]
+	ld e, a
 .loop_things
 	bit bThingStatus_VOID, [hl]
 	jr nz, .loop_things_continue
@@ -118,7 +120,8 @@ things_think::
 ; @mut: A, B, DE, HL
 things_draw::
 	ld bc, wWorld.things
-	ld e, ThingsMax
+	ld a, [wMap.things_count]
+	ld e, a
 .loop_things
 	ld a, [bc] ; ThingInstance.status
 	bit bThingStatus_VOID, a
@@ -166,7 +169,8 @@ things_draw::
 ; @mut: AF, BC, DE, HL
 _things_process_collisions::
 	ld bc, wWorld.things
-	ld e, ThingsMax
+	ld a, [wMap.things_count]
+	ld e, a
 .loop_things
 	ld a, [bc]       ; ThingInstance.status
 	bit bThingStatus_VOID, a

@@ -1,42 +1,37 @@
 ﻿function readColliderBox(addr, memType)
   local box = {}
-  for _,field in ipairs({"left", "right", "top", "bottom"}) do
+  for _, field in ipairs({ "left", "right", "top", "bottom" }) do
     box[field] = emu.read(addr, memType)
     addr = addr + 1
   end
   return box, addr
 end
 
-
 function writeColliderBox(addr, memType, box)
-  for _,field in ipairs({"left", "right", "top", "bottom"}) do
+  for _, field in ipairs({ "left", "right", "top", "bottom" }) do
     emu.write(addr, box[field], memType)
     addr = addr + 1
   end
 end
 
-
 function boxPosSize(box)
   return box.left, box.top, box.right - box.left, box.bottom - box.top
 end
 
-
 function boxFromPosSize(x, y, w, h)
   return {
-    left=x,
-    right=x+w,
-    top=y,
-    bottom=y+h,
+    left = x,
+    right = x + w,
+    top = y,
+    bottom = y + h,
   }
 end
-
 
 function boxToString(box)
   local sr = box.right == box.left and "-" or box.right
   local sb = box.bottom == box.top and "-" or box.bottom
   return "{" .. box.left .. ":" .. sr .. ", " .. box.top .. ":" .. sb .. "}"
 end
-
 
 function boxHasPoint(box, x, y)
   if x < box.left or x >= box.right then
@@ -47,19 +42,16 @@ function boxHasPoint(box, x, y)
   return true
 end
 
-
 function readColliderStatus(addr, memType)
   local status = {}
   status["result"] = emu.read(addr, memType)
   return status, addr + 1
 end
 
-
 function getColliderCount()
   local label = emu.getLabelAddress("wColliderCount")
   return emu.read(label.address, label.memType)
 end
-
 
 function getColliders()
   local count = getColliderCount()
@@ -68,8 +60,8 @@ function getColliders()
   local wColliderStatus = emu.getLabelAddress("wColliderStatus")
   local stataddr = wColliderStatus.address
   local colliders = {}
-  for i=0,count-1 do
-    local coll = { tag="pool" }
+  for i = 0, count - 1 do
+    local coll = { tag = "pool" }
     local box, nextaddr = readColliderBox(colladdr, wColliders.memType)
     coll["box"] = box
     coll["addr"] = colladdr
@@ -82,12 +74,11 @@ function getColliders()
 
   local wCollideSubject = emu.getLabelAddress("wCollideSubject")
   local subjBox, _ = readColliderBox(wCollideSubject.address, wCollideSubject.memType)
-  local subj = { tag="subject", box=subjBox, addr=wCollideSubject.address, result=0xFF }
+  local subj = { tag = "subject", box = subjBox, addr = wCollideSubject.address, result = 0xFF }
   table.insert(colliders, subj)
 
   return colliders
 end
-
 
 function setColliderPosition(label, x, y)
   local box, _ = readColliderBox(label.address, label.memType)
@@ -95,10 +86,9 @@ function setColliderPosition(label, x, y)
   writeColliderBox(label.address, label.memType, boxFromPosSize(x, y, w, h))
 end
 
-
 function pickColliders(colliders, x, y)
   local picked = {}
-  for i,coll in ipairs(colliders) do
+  for i, coll in ipairs(colliders) do
     if boxHasPoint(coll.box, x, y) then
       coll.picked = true
       table.insert(picked, i)
@@ -109,7 +99,6 @@ function pickColliders(colliders, x, y)
   return picked
 end
 
-
 function colliderGetColor(coll)
   if coll.tag == "subject" then
     return colliderSubjectColor
@@ -117,7 +106,6 @@ function colliderGetColor(coll)
     return colliderColor ~ colorModXY(coll.box.left, coll.box.top)
   end
 end
-
 
 function drawCollider(coll)
   local x, y, w, h = boxPosSize(coll.box)
@@ -130,7 +118,6 @@ function drawCollider(coll)
     emu.drawLine(x, y, x, y - 4, 0xFF00FF)
   end
 end
-
 
 function printCollidersInfo(colliders)
   local drawScale = settings.colliderList.drawScale
@@ -147,7 +134,7 @@ function printCollidersInfo(colliders)
   )
   -- collider hover popout
   local popoutcount = 0
-  for i,coll in ipairs(colliders) do
+  for i, coll in ipairs(colliders) do
     if coll.picked then
       local x, y = coll.box.left - 2, coll.box.top - 2
       x, y = x * drawScale + popoutcount * 4, y * drawScale - popoutcount * 4
@@ -161,14 +148,13 @@ function printCollidersInfo(colliders)
   emu.selectDrawSurface(emu.drawSurface.consoleScreen)
 end
 
-
 function getThings()
   local wMap_things_count = emu.getLabelAddress("wMap_things_count")
   local count = emu.read(wMap_things_count.address, wMap_things_count.memType)
   local wWorld_things = emu.getLabelAddress("wWorld_things")
   local addr = wWorld_things.address
   local things = {}
-  for i=1,count do
+  for i = 1, count do
     local thing, nextaddr = readThing(addr, wWorld_things.memType)
     table.insert(things, thing)
     addr = nextaddr
@@ -177,21 +163,20 @@ function getThings()
   return things
 end
 
-
 function readThing(addr, memType)
-  local thing = { addr=addr }
-  for _,field in ipairs({"hits", "y", "x", "t", "attr", "collider"}) do
+  local thing = { addr = addr }
+  for _, field in ipairs({ "hits", "y", "x", "t", "attr", "collider" }) do
     thing[field] = emu.read(addr, memType)
     addr = addr + 1
   end
   return thing, addr
 end
 
-
 function thingToString(thing)
-  return "H: " .. thing.hits .. " y: " .. thing.y .. " x: " .. thing.x .. " t: " .. thing.t .. " a: " .. thing.attr .. " C: " .. thing.collider
+  return "H: " ..
+  thing.hits ..
+  " y: " .. thing.y .. " x: " .. thing.x .. " t: " .. thing.t .. " a: " .. thing.attr .. " C: " .. thing.collider
 end
-
 
 function printThingsInfo(things)
   local drawScale = settings.thingsInfo.drawScale
@@ -203,12 +188,11 @@ function printThingsInfo(things)
     settings.thingsInfo.linesPerPage,
     #things,
     function(i)
-      return i-1 .. ": " .. thingToString(things[i])
+      return i - 1 .. ": " .. thingToString(things[i])
     end
   )
   emu.selectDrawSurface(emu.drawSurface.consoleScreen)
 end
-
 
 function printInfoPage(x, y, page, linesPerPage, totalLines, fnGetLine)
   local idx = page * linesPerPage
@@ -224,12 +208,11 @@ function printInfoPage(x, y, page, linesPerPage, totalLines, fnGetLine)
     emu.drawRectangle(x, y, w, h, bgColor, true, 1)
     emu.drawRectangle(x, y, w, h, fgColor, false, 1)
 
-    for line=1,lineCount do
-      emu.drawString(x + 4, y + 4 + 8 * (line-1), fnGetLine(line + idx), textColor, 0xFF000000)
+    for line = 1, lineCount do
+      emu.drawString(x + 4, y + 4 + 8 * (line - 1), fnGetLine(line + idx), textColor, 0xFF000000)
     end
   end
 end
-
 
 function infoPageForward(infoSettings, lineCount)
   page = infoSettings.page + 1
@@ -239,7 +222,6 @@ function infoPageForward(infoSettings, lineCount)
   infoSettings.page = page
 end
 
-
 function drawPointer(x, y)
   emu.drawPixel(x, y, 0x80FFFFFF, 6)
   emu.drawLine(x - 2, y, x - 6, y + 1, 0x80000000)
@@ -247,17 +229,14 @@ function drawPointer(x, y)
   emu.drawLine(x + 2, y - 2, x + 4, y - 4, 0x80000000)
 end
 
-
 function colorModXY(x, y)
   return 0xFFFFFF & ((x << 5) ~ (y << 3) ~ (x << 11 ~ y) ~ (x * 17 ~ y * 23) << 17)
 end
-
 
 function msg(s, cat)
   emu.displayMessage(cat or "Collide", s)
   emu.log(s)
 end
-
 
 bgColor = 0x7F8C8C8C
 fgColor = 0xD9D9D9
@@ -292,7 +271,7 @@ function printInfo()
   mousePrev = mouse
   mouse = emu.getMouseState()
   mousePressed = {}
-  for k,v in pairs(mouse) do
+  for k, v in pairs(mouse) do
     mousePressed[k] = v and v ~= mousePrev[k]
   end
 
@@ -300,7 +279,7 @@ function printInfo()
 
   local colliders = getColliders()
   pickColliders(colliders, mouse.x, mouse.y)
-  for i,coll in ipairs(colliders) do
+  for i, coll in ipairs(colliders) do
     drawCollider(coll)
   end
 

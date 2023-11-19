@@ -47,6 +47,9 @@ local colliderSubjectColor = 0xA010D0E0
 local mousePrev = emu.getMouseState()
 local mouse = emu.getMouseState()
 
+local mainMode = nil
+local terrain = nil
+
 local settings = {
   colliderList = {
     page = -1,
@@ -367,6 +370,44 @@ function ThingsPrintInfo(things, cfg)
   emu.selectDrawSurface(emu.drawSurface.consoleScreen)
 end
 
+function SetupTerrain()
+  local laBuffer = emu.getLabelAddress("wWorld_terrain")
+  if not laBuffer then
+    return nil
+  end
+  local mod = {
+    laBuffer = laBuffer,
+    heights = {},
+    refresh = function(t)
+      local laSize = emu.getLabelAddress("wMap_terrain_size")
+      local terrainSize = emu.read(laSize.address, laSize.memType)
+      local heights = {}
+      for i = 1, terrainSize do
+        table.insert(heights, emu.read(t.laBuffer.address + i - 1, t.laBuffer.memType))
+      end
+      return heights
+    end,
+    draw = function(t)
+      for i = 1, #t.heights do
+        local y = t.heights[i]
+        if y <= 144 then
+          emu.drawPixel(i - 1, y, 0x40D0C020)
+        end
+      end
+    end,
+  }
+  local onWrite = function(address, value)
+    local bufAddr = emu.convertAddress(address).address
+    local x = bufAddr - mod.laBuffer.address
+    mod.heights[x + 1] = value
+  end
+  local startAddr = mod.laBuffer.address
+  local endAddr = startAddr + 255
+  mod.callback = emu.addMemoryCallback(onWrite, emu.callbackType.write, startAddr, endAddr, emu.cpuType.gameboy, mod.laBuffer.memType)
+  mod:refresh()
+  return mod
+end
+
 function PrintInfoPage(x, y, page, linesPerPage, totalLines, fnGetLine, fixedLines)
   fixedLines = fixedLines or {}
   if type(fixedLines) ~= "table" then
@@ -453,9 +494,20 @@ function OnEndFrame()
   --Get the emulation state
   local state = emu.getState()
 
+  if not terrain then
+    terrain = SetupTerrain()
+  end
+
+  local prevMainMode = mainMode
+  mainMode = GetMainMode()
+
   emu.drawString(0, 0, tostring(GetMainMode()), textColor, 0xC0000000)
-  if GetMainMode() ~= MainMode.Game then
+  if mainMode ~= MainMode.Game then
     return
+  end
+
+  if terrain then
+    terrain:draw()
   end
 
   --Get the mouse's state (x, y, left, right, middle)

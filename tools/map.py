@@ -291,7 +291,7 @@ class Map:
                 oam_attr = self.gid_to_oam_attr(obj.gid)
                 pos_x = round(obj.coordinates.x)
                 pos_y = round(obj.coordinates.y - 8)
-                lines.append(f"\t\tdb 0, {pos_y}, {pos_x}, {chr_code}, {oam_attr}")
+                lines.append(f"\t\tPlaceThingLegacy {pos_y}, {pos_x}, {chr_code}, {oam_attr}")
             things_chunk = ASM_THINGS.replace(
                 "%THING_COUNT%", str(len(self.things)))
             things_chunk = things_chunk.replace("%THINGS%", "\n".join(lines))
@@ -430,9 +430,9 @@ ASM_HEIGHTMAP = """\tdb MapChunk_Terrain
 """
 
 ASM_THINGS = """\tdb MapChunk_Things
-\t.thing_count: db %THING_COUNT%
 \t.things:
 %THINGS%
+\t\tdb tc_Stop
 """
 
 ASM_END = """\tdb MapChunk_End

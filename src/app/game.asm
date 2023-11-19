@@ -46,18 +46,18 @@ Game::
 	call gfx_load_game_obj
 	call gfx_load_bg_tiles
 
+	call Collide_init
+	call things_init
+	call tcm_init
 	call world_init
 	ld a, [wSettings.level]
 	call Maps_data_access
 	ld e, l
 	ld d, h
 	call world_load_map
-
 	call world_display_tilemap
 
-	call Collide_init
-	call things_init
-	call things_init_colliders
+	call things_start
 	call Ball_init
 
 if def(DEBUG_BALL)
@@ -187,12 +187,12 @@ _ball_update:
 
 	; update things
 	call things_think
-	ld a, [wThings.just_died]
+	ld a, [wThingsInfo.just_died]
 	and a
 	jr z, .things_done
 	call _things_smashed
 	call build_status_stats
-	ld a, [wThings.alive]
+	ld a, [wThingsInfo.targets]
 	cp 0
 	jr nz, .things_done
 	ld de, msgAllDestroyed
@@ -328,7 +328,7 @@ build_status_stats:
 	call digi_print_u8_99
 	PutChar " "
 	PutChar "<Hut>"
-	ld a, [wThings.alive]
+	ld a, [wThingsInfo.targets]
 	call digi_print_u8_99
 	ld de, sTipKeys
 	ld bc, sTipKeys_len

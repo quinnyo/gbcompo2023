@@ -64,6 +64,8 @@ Collide_get_status::
 Collide_add_box::
 	ld hl, wColliderCount
 	ld a, [hl]
+	cp COLLIDER_CAPACITY
+	ret nc
 	inc [hl]
 	ld l, a
 
@@ -72,10 +74,38 @@ Collide_add_box::
 ; Look up a box address by index.
 ; @param L: index
 ; @return HL: box address
+; @mut: HL
 Collide_get_box_at::
 	sla l
 	sla l
 	ld h, high(wColliders)
+	ret
+
+
+; @param B,C: min X,Y
+; @param A: index
+; @mut: AF, HL
+Collide_set_box_min::
+	ld l, a
+	call Collide_get_box_at
+	ld a, b
+	ld [hl+], a
+	inc hl ; skip right
+	ld [hl], c
+	ret
+
+
+; @param B,C: max X,Y
+; @param A: index
+; @mut: AF, HL
+Collide_set_box_max::
+	ld l, a
+	call Collide_get_box_at
+	inc hl ; skip left
+	ld a, b
+	ld [hl+], a
+	inc hl ; skip top
+	ld [hl], c
 	ret
 
 
@@ -130,7 +160,11 @@ Collide_set_subject::
 ; bit 0 of each collider's wColliderStatus value.
 Collide_all_subject::
 assert low(wColliders) == 0, "Unexpected wColliders alignment."
-assert COLLIDERS_POOL_SIZE < 256
+assert COLLIDERS_POOL_SIZE <= 128
+	ld a, [wColliderCount]
+	and a
+	ret z
+
 	ld bc, wColliderStatus
 	ld de, wColliders
 :

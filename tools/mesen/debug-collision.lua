@@ -1,4 +1,31 @@
-﻿function readColliderBox(addr, memType)
+﻿local bgColor = 0x7F8C8C8C
+local fgColor = 0xD9D9D9
+local textColor = 0xFFFFFF
+local textBgColor = 0xC8000000
+local colliderColor = 0xA0A38373
+local colliderSubjectColor = 0xA010D0E0
+
+local mousePrev = emu.getMouseState()
+local mouse = emu.getMouseState()
+
+local settings = {
+  colliderList = {
+    page = -1,
+    linesPerPage = 10,
+    drawSurface = emu.drawSurface.scriptHud,
+    drawScale = 2,
+  },
+  thingsInfo = {
+    page = -1,
+    linesPerPage = 10,
+    drawSurface = emu.drawSurface.scriptHud,
+    drawScale = 2,
+  },
+  pointerEnabled = false,
+}
+
+
+function readColliderBox(addr, memType)
   local box = {}
   for _, field in ipairs({ "left", "right", "top", "bottom" }) do
     box[field] = emu.read(addr, memType)
@@ -148,14 +175,23 @@ function printCollidersInfo(colliders)
   emu.selectDrawSurface(emu.drawSurface.consoleScreen)
 end
 
+ThingStruct = {
+  status = 1,
+  collider = 1,
+  pos = 2,
+  draw_mode = 1,
+  drawable = 2,
+  on_die = "w",
+}
+
 function getThings()
-  local wMap_things_count = emu.getLabelAddress("wMap_things_count")
-  local count = emu.read(wMap_things_count.address, wMap_things_count.memType)
-  local wWorld_things = emu.getLabelAddress("wWorld_things")
-  local addr = wWorld_things.address
+  local wThings = emu.getLabelAddress("wThings")
+  local wThingsInfo_count = emu.getLabelAddress("wThingsInfo_count")
+  local count = emu.read(wThingsInfo_count.address, wThingsInfo_count.memType)
+  local addr = wThings.address
   local things = {}
   for i = 1, count do
-    local thing, nextaddr = readThing(addr, wWorld_things.memType)
+    local thing, nextaddr = readThing(addr, wThings.memType)
     table.insert(things, thing)
     addr = nextaddr
   end
@@ -165,20 +201,66 @@ end
 
 function readThing(addr, memType)
   local thing = { addr = addr }
-  for _, field in ipairs({ "hits", "y", "x", "t", "attr", "collider" }) do
-    thing[field] = emu.read(addr, memType)
-    addr = addr + 1
-  end
-  return thing, addr
+  thing.status = emu.read(addr + 0, memType)
+  thing.collider = emu.read(addr + 1, memType)
+  local x = emu.read(addr + 2, memType)
+  local y = emu.read(addr + 3, memType)
+  thing.pos = { x, y }
+  thing.draw_mode = emu.read(addr + 4, memType)
+  local drawable0 = emu.read(addr + 5, memType)
+  local drawable1 = emu.read(addr + 6, memType)
+  thing.drawable = { drawable0, drawable1 }
+  thing.on_die = emu.readWord(addr + 7, memType)
+
+  return thing, addr + 9
 end
 
-function thingToString(thing)
-  return "H: " ..
-  thing.hits ..
-  " y: " .. thing.y .. " x: " .. thing.x .. " t: " .. thing.t .. " a: " .. thing.attr .. " C: " .. thing.collider
+
+function thingDecodeStatus(status)
+  local t = {
+    hits = status & 0x03,
+    target = status & 0x10 ~= 0,
+    ev_hit = status & 0x20 ~= 0,
+    ev_die = status & 0x40 ~= 0,
+    void = status & 0x80 ~= 0,
+  }
+  setmetatable(t, {
+    __tostring = function(t)
+      local void = t.void and "X" or " "
+      local hits = ""
+      for i = 1, 3 do
+        if i <= t.hits then
+          hits = hits .. "+"
+        else
+          hits = hits .. " "
+        end
+      end
+      local target = t.target and "TAR" or "   "
+      local events = "_"
+      if t.ev_die then
+        events = "D"
+      elseif t.ev_hit then
+        events = "H"
+      end
+      return string.format("%s %s[%s] %s", void, target, hits, events)
+    end,
+  })
+  return t
+end
+
+function thingToString(t)
+  local pos = "x" .. t.pos[1] .. ", y" .. t.pos[2]
+  local collider = "C" .. t.collider
+  local drawable = "(" .. t.draw_mode .. "/OAM) " .. t.drawable[1] .. "/" .. t.drawable[2]
+  return tostring(thingDecodeStatus(t.status)) .. ", " .. collider .. ", " .. pos .. ", " .. drawable
 end
 
 function printThingsInfo(things)
+  local wThingsInfo_targets = emu.getLabelAddress("wThingsInfo_targets")
+  local wThingsInfo_count = emu.getLabelAddress("wThingsInfo_count")
+  local thingsCount = emu.read(wThingsInfo_count.address, wThingsInfo_count.memType)
+  local thingsAlive = emu.read(wThingsInfo_targets.address, wThingsInfo_targets.memType)
+  local header = "Things: " .. thingsAlive .. "/" .. thingsCount
   local drawScale = settings.thingsInfo.drawScale
   emu.selectDrawSurface(settings.thingsInfo.drawSurface, drawScale)
   printInfoPage(
@@ -188,34 +270,47 @@ function printThingsInfo(things)
     settings.thingsInfo.linesPerPage,
     #things,
     function(i)
-      return i - 1 .. ": " .. thingToString(things[i])
-    end
+      return i - 1 .. " [" .. things[i].addr .. "] " ..thingToString(things[i])
+    end,
+    header
   )
   emu.selectDrawSurface(emu.drawSurface.consoleScreen)
 end
 
-function printInfoPage(x, y, page, linesPerPage, totalLines, fnGetLine)
+function printInfoPage(x, y, page, linesPerPage, totalLines, fnGetLine, fixedLines)
+  fixedLines = fixedLines or {}
+  if type(fixedLines) ~= "table" then
+    fixedLines = {tostring(fixedLines)}
+  end
   local idx = page * linesPerPage
-  if idx >= 0 and idx < totalLines then
+  if idx >= 0 and idx < totalLines + #fixedLines then
     local lineCount = linesPerPage
     local iend = lineCount + idx + 1
     if iend > totalLines then
       iend = totalLines
       lineCount = iend - idx
     end
-    local w, h = 220, lineCount * 8 + 8
 
+    local w, h = 220, (lineCount + #fixedLines) * 8 + 8
     emu.drawRectangle(x, y, w, h, bgColor, true, 1)
     emu.drawRectangle(x, y, w, h, fgColor, false, 1)
 
+    x = x + 4
+    y = y + 4
+
+    for _, s in ipairs(fixedLines) do
+      emu.drawString(x, y, s, textColor, 0xC0000000)
+      y = y + 8
+    end
+
     for line = 1, lineCount do
-      emu.drawString(x + 4, y + 4 + 8 * (line - 1), fnGetLine(line + idx), textColor, 0xFF000000)
+      emu.drawString(x, y + 8 * (line - 1), fnGetLine(line + idx), textColor, 0xFF000000)
     end
   end
 end
 
 function infoPageForward(infoSettings, lineCount)
-  page = infoSettings.page + 1
+  local page = infoSettings.page + 1
   if page * infoSettings.linesPerPage > lineCount then
     page = -1
   end
@@ -223,10 +318,16 @@ function infoPageForward(infoSettings, lineCount)
 end
 
 function drawPointer(x, y)
-  emu.drawPixel(x, y, 0x80FFFFFF, 6)
-  emu.drawLine(x - 2, y, x - 6, y + 1, 0x80000000)
-  emu.drawLine(x, y + 2, x - 1, y + 6, 0x80000000)
-  emu.drawLine(x + 2, y - 2, x + 4, y - 4, 0x80000000)
+  local colour = 0x308030E0
+  emu.drawPixel(x, y, colour)
+  emu.drawPixel(x + 8, y + 8, colour)
+  emu.drawPixel(x + 8, y, colour)
+  emu.drawPixel(x, y + 8, colour)
+  emu.drawPixel(x - 8, y - 8, colour)
+  emu.drawPixel(x - 8, y, colour)
+  emu.drawPixel(x, y - 8, colour)
+  emu.drawPixel(x - 8, y + 8, colour)
+  emu.drawPixel(x + 8, y - 8, colour)
 end
 
 function colorModXY(x, y)
@@ -238,39 +339,34 @@ function msg(s, cat)
   emu.log(s)
 end
 
-bgColor = 0x7F8C8C8C
-fgColor = 0xD9D9D9
-textColor = 0xFFFFFF
-textBgColor = 0xC8000000
-colliderColor = 0xA0A38373
-colliderSubjectColor = 0xA010D0E0
-
-mousePrev = emu.getMouseState()
-mouse = emu.getMouseState()
-
-settings = {
-  colliderList = {
-    page = -1,
-    linesPerPage = 10,
-    drawSurface = emu.drawSurface.scriptHud,
-    drawScale = 2,
-  },
-  thingsInfo = {
-    page = -1,
-    linesPerPage = 10,
-    drawSurface = emu.drawSurface.scriptHud,
-    drawScale = 2,
-  },
+MainMode = {
+  Splash = 0,
+  Game = 1,
+  LevelSelect = 2,
+  SoundTest = 3,
 }
 
-function printInfo()
+function GetMainMode()
+  local wMode = emu.getLabelAddress("wMode")
+  if wMode then
+    return emu.read(wMode.address, wMode.memType)
+  end
+  return nil
+end
+
+function OnEndFrame()
   --Get the emulation state
-  state = emu.getState()
+  local state = emu.getState()
+
+  emu.drawString(0, 0, tostring(GetMainMode()), textColor, 0xC0000000)
+  if GetMainMode() ~= MainMode.Game then
+    return
+  end
 
   --Get the mouse's state (x, y, left, right, middle)
   mousePrev = mouse
   mouse = emu.getMouseState()
-  mousePressed = {}
+  local mousePressed = {}
   for k, v in pairs(mouse) do
     mousePressed[k] = v and v ~= mousePrev[k]
   end
@@ -296,8 +392,12 @@ function printInfo()
   printCollidersInfo(colliders)
   printThingsInfo(things)
 
-  drawPointer(mouse.x, mouse.y)
+  if mousePressed.middle then
+    settings.pointerEnabled = not settings.pointerEnabled
+  end
+  if settings.pointerEnabled then
+    drawPointer(mouse.x, mouse.y)
+  end
 end
 
---Register some code (printInfo function) that will be run at the end of each frame
-emu.addEventCallback(printInfo, emu.eventType.endFrame)
+emu.addEventCallback(OnEndFrame, emu.eventType.endFrame)

@@ -27,11 +27,6 @@ world_init::
 	ld bc, World_default.end - World_default
 	call mem_copy
 
-	ld hl, wWorld.things
-	ld c, World_things__sz
-	ld a, fThingStatus_VOID
-	call mem_fill_byte
-
 	ret
 
 
@@ -233,11 +228,6 @@ world_load_map::
 	jr .loop
 
 .load_things:
-	; Map.things_count
-	ld a, [de]
-	inc de
-	ld [wMap.things_count], a
-	ld c, a
 	call world_load_things
 	jr .loop
 
@@ -325,35 +315,12 @@ world_load_tilemap:
 	ret
 
 
-; @param  C: Map.things_count
 ; @param DE: source address
 world_load_things:
-	ld hl, wWorld.things
-.loop
-	ld a, [de]        ; ThingDef.meta
-	inc de
-	; only one type of thing...
-; _add_tile_object_thing:
-	ld a, 1           ; 1 hitpoint
-	ld [hl+], a       ; ThingInstance.status
-	ld a, [de]        ; ThingDef.y
-	inc de
-	ld [hl+], a       ; ThingInstance.y
-	ld a, [de]        ; ThingDef.x
-	inc de
-	ld [hl+], a       ; ThingInstance.x
-	ld a, [de]        ; ThingDef.t
-	inc de
-	ld [hl+], a       ; ThingInstance.t
-	ld a, [de]        ; ThingDef.oam_attr
-	inc de
-	ld [hl+], a       ; ThingInstance.attr
-	xor a
-	ld [hl+], a       ; ThingInstance.collider
-
-	dec c
-	jr nz, .loop
-
+	ld c, e
+	ld b, d
+	call tcm_load_program
+	call tcm_run
 	ret
 
 

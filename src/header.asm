@@ -266,13 +266,8 @@ def MAP_TITLE_MAX_LENGTH equ 15
 def MAP_COUNT = 0 ; number of levels defined
 export MAP_COUNT
 
-; MapDef ID, TITLE
-macro MapDef
+macro MapDefRaw
 	assert charlen(\2) <= MAP_TITLE_MAX_LENGTH
-
-	pushs
-	include "res/map/\1.asm"
-	pops
 
 	def MAP_{u:MAP_COUNT} equs "\1"
 	def MAP_{u:MAP_COUNT}_TITLE equs \2
@@ -281,6 +276,18 @@ macro MapDef
 	def MAP_COUNT += 1
 endm
 
+; MapDef ID, TITLE
+macro MapDef
+	pushs
+	include "res/map/\1.asm"
+	pops
+
+	MapDefRaw \#
+endm
+
+if def(INCL_TESTMAP)
+	MapDef testmap, "Testmap?!"
+endc
 
 	MapDef e1m1, "Emerge'n'see"
 	MapDef e1m2, "Lookout!"

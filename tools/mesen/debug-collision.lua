@@ -1,4 +1,43 @@
-﻿local bgColor = 0x7F8C8C8C
+﻿function AddressToString(addr)
+  return string.format("%04X", addr)
+end
+
+function Vec2AxisIndex(axis)
+  if type(axis) == "number" then
+    return axis
+  elseif type(axis) == "string" then
+    if axis == "x" then
+      return 1
+    elseif axis == "y" then
+      return 2
+    end
+  end
+  error(string.format("Vec2: Invalid axis (%s)", axis))
+end
+
+function Vec2(x, y)
+  if type(x) ~= type(y) then
+    error("Vec2: expects two numbers or no args")
+  end
+  local vec = { x or 0, y or 0 }
+  setmetatable(vec, {
+    __index = function(t, k)
+      return t[Vec2AxisIndex(k)]
+    end,
+    __newindex = function(t, k, v)
+      t[Vec2AxisIndex(k)] = v
+    end,
+    __tostring = function(t)
+      return string.format("(%02X,%02X)", t[1], t[2])
+    end,
+  })
+
+  return vec
+end
+
+LINE_HEIGHT = 8
+
+local bgColor = 0x7F8C8C8C
 local fgColor = 0xD9D9D9
 local textColor = 0xFFFFFF
 local textBgColor = 0xC8000000
@@ -14,12 +53,15 @@ local settings = {
     linesPerPage = 10,
     drawSurface = emu.drawSurface.scriptHud,
     drawScale = 2,
+    pos = Vec2(92, 2),
   },
   thingsInfo = {
     page = -1,
     linesPerPage = 10,
     drawSurface = emu.drawSurface.scriptHud,
     drawScale = 2,
+    pos = Vec2(2, 2),
+    thingFmt = "{index}: {target}{hits} {collider} {position} {drawable}",
   },
   pointerEnabled = false,
 }
@@ -55,9 +97,7 @@ function boxFromPosSize(x, y, w, h)
 end
 
 function boxToString(box)
-  local sr = box.right == box.left and "-" or box.right
-  local sb = box.bottom == box.top and "-" or box.bottom
-  return "{" .. box.left .. ":" .. sr .. ", " .. box.top .. ":" .. sb .. "}"
+  return string.format("%3d,%3d:%3d,%3d", box.left, box.top, box.right, box.bottom)
 end
 
 function boxHasPoint(box, x, y)
@@ -146,18 +186,21 @@ function drawCollider(coll)
   end
 end
 
-function printCollidersInfo(colliders)
-  local drawScale = settings.colliderList.drawScale
-  emu.selectDrawSurface(settings.colliderList.drawSurface, drawScale)
-  printInfoPage(
-    4,
-    4,
-    settings.colliderList.page,
-    settings.colliderList.linesPerPage,
+function CollidersPrintInfo(colliders, cfg)
+  cfg = cfg or settings.colliderList
+  local header = "Colliders"
+  local drawScale = cfg.drawScale
+  emu.selectDrawSurface(cfg.drawSurface, drawScale)
+  PrintInfoPage(
+    cfg.pos.x * drawScale,
+    cfg.pos.y * drawScale,
+    cfg.page,
+    cfg.linesPerPage,
     #colliders,
     function(i)
-      return i - 1 .. ": " .. boxToString(colliders[i].box)
-    end
+      return string.format("%2d %s", i - 1, boxToString(colliders[i].box))
+    end,
+    header
   )
   -- collider hover popout
   local popoutcount = 0
@@ -184,6 +227,39 @@ ThingStruct = {
   on_die = "w",
 }
 
+ThingFields = { "index", "addr", "void", "target", "hits", "collider", "position", "drawable", }
+
+ThingFieldFormatters = {
+  index = function(t)
+    return string.format("%2d", t.index)
+  end,
+  addr = function(t)
+    return AddressToString(t.addr)
+  end,
+  void = function(t)
+    return t.status.void and "X" or " "
+  end,
+  target = function(t)
+    return t.status.target and "T" or " "
+  end,
+  hits = function(t)
+    return t.status.hits > 0 and string.format("+%d", t.status.hits) or "**"
+  end,
+  collider = function(t)
+    return string.format("C:%X", t.collider)
+  end,
+  position = function(t)
+    return tostring(t.pos)
+  end,
+  drawable = function(t)
+    local sMode = "OAM"
+    if t.draw_mode ~= 0 then
+      sMode = string.format("?%2X", t.draw_mode)
+    end
+    return string.format("%s{%02X,%02X}", sMode, t.drawable[1], t.drawable[2])
+  end,
+}
+
 function getThings()
   local wThings = emu.getLabelAddress("wThings")
   local wThingsInfo_count = emu.getLabelAddress("wThingsInfo_count")
@@ -191,7 +267,7 @@ function getThings()
   local addr = wThings.address
   local things = {}
   for i = 1, count do
-    local thing, nextaddr = readThing(addr, wThings.memType)
+    local thing, nextaddr = ThingRead(i - 1, addr, wThings.memType)
     table.insert(things, thing)
     addr = nextaddr
   end
@@ -199,25 +275,45 @@ function getThings()
   return things
 end
 
-function readThing(addr, memType)
-  local thing = { addr = addr }
-  thing.status = emu.read(addr + 0, memType)
+function ThingRead(index, addr, memType)
+  local thing = {
+    index = index,
+    addr = addr,
+  }
+  thing.status = ThingDecodeStatus(emu.read(addr + 0, memType))
   thing.collider = emu.read(addr + 1, memType)
   local x = emu.read(addr + 2, memType)
   local y = emu.read(addr + 3, memType)
-  thing.pos = { x, y }
+  thing.pos = Vec2(x, y)
   thing.draw_mode = emu.read(addr + 4, memType)
   local drawable0 = emu.read(addr + 5, memType)
   local drawable1 = emu.read(addr + 6, memType)
   thing.drawable = { drawable0, drawable1 }
   thing.on_die = emu.readWord(addr + 7, memType)
 
+  thing.format = function(t, fmt)
+    local s = fmt
+    for i, v in ipairs(ThingFields) do
+      s = s:gsub("{" .. v .. "}", ThingFieldFormatters[v](t))
+    end
+    return s
+  end
+
+  setmetatable(thing, {
+    __tostring = function(t)
+      if t.status.void then
+        return "VOID"
+      end
+      return thing:format("{index}[{addr}]: {void} {target}{hits} {collider} {position} {drawable}")
+    end,
+  })
+
   return thing, addr + 9
 end
 
-
-function thingDecodeStatus(status)
+function ThingDecodeStatus(status)
   local t = {
+    raw = status,
     hits = status & 0x03,
     target = status & 0x10 ~= 0,
     ev_hit = status & 0x20 ~= 0,
@@ -248,36 +344,30 @@ function thingDecodeStatus(status)
   return t
 end
 
-function thingToString(t)
-  local pos = "x" .. t.pos[1] .. ", y" .. t.pos[2]
-  local collider = "C" .. t.collider
-  local drawable = "(" .. t.draw_mode .. "/OAM) " .. t.drawable[1] .. "/" .. t.drawable[2]
-  return tostring(thingDecodeStatus(t.status)) .. ", " .. collider .. ", " .. pos .. ", " .. drawable
-end
-
-function printThingsInfo(things)
+function ThingsPrintInfo(things, cfg)
+  cfg = cfg or settings.thingsInfo
   local wThingsInfo_targets = emu.getLabelAddress("wThingsInfo_targets")
   local wThingsInfo_count = emu.getLabelAddress("wThingsInfo_count")
   local thingsCount = emu.read(wThingsInfo_count.address, wThingsInfo_count.memType)
   local thingsAlive = emu.read(wThingsInfo_targets.address, wThingsInfo_targets.memType)
   local header = "Things: " .. thingsAlive .. "/" .. thingsCount
-  local drawScale = settings.thingsInfo.drawScale
-  emu.selectDrawSurface(settings.thingsInfo.drawSurface, drawScale)
-  printInfoPage(
-    4,
-    96,
-    settings.thingsInfo.page,
-    settings.thingsInfo.linesPerPage,
+  local drawScale = cfg.drawScale
+  emu.selectDrawSurface(cfg.drawSurface, drawScale)
+  PrintInfoPage(
+    cfg.pos.x * drawScale,
+    cfg.pos.y * drawScale,
+    cfg.page,
+    cfg.linesPerPage,
     #things,
     function(i)
-      return i - 1 .. " [" .. things[i].addr .. "] " ..thingToString(things[i])
+      return things[i]:format(cfg.thingFmt)
     end,
     header
   )
   emu.selectDrawSurface(emu.drawSurface.consoleScreen)
 end
 
-function printInfoPage(x, y, page, linesPerPage, totalLines, fnGetLine, fixedLines)
+function PrintInfoPage(x, y, page, linesPerPage, totalLines, fnGetLine, fixedLines)
   fixedLines = fixedLines or {}
   if type(fixedLines) ~= "table" then
     fixedLines = {tostring(fixedLines)}
@@ -291,20 +381,25 @@ function printInfoPage(x, y, page, linesPerPage, totalLines, fnGetLine, fixedLin
       lineCount = iend - idx
     end
 
-    local w, h = 220, (lineCount + #fixedLines) * 8 + 8
-    emu.drawRectangle(x, y, w, h, bgColor, true, 1)
-    emu.drawRectangle(x, y, w, h, fgColor, false, 1)
+    local textWidth = 168
+    local textHeight = (lineCount + #fixedLines) * LINE_HEIGHT + 2
+    local innerMargin = 2
+    local max = Vec2(x + innerMargin * 2 + textWidth, y + innerMargin * 2 + textHeight)
+    local w = max.x - x
+    local h = max.y - y
+    emu.drawRectangle(x, y, w, h, bgColor, true)
+    emu.drawRectangle(x, y, w, h, fgColor, false)
 
-    x = x + 4
-    y = y + 4
+    x = x + innerMargin
+    y = y + innerMargin
 
     for _, s in ipairs(fixedLines) do
-      emu.drawString(x, y, s, textColor, 0xC0000000)
-      y = y + 8
+      emu.drawString(x, y, s, textColor, 0xFF000000)
+      y = y + LINE_HEIGHT
     end
 
     for line = 1, lineCount do
-      emu.drawString(x, y + 8 * (line - 1), fnGetLine(line + idx), textColor, 0xFF000000)
+      emu.drawString(x, y + LINE_HEIGHT * (line - 1), fnGetLine(line + idx), textColor, 0xFF000000)
     end
   end
 end
@@ -389,8 +484,8 @@ function OnEndFrame()
     setColliderPosition(wCollideSubject, mouse.x, mouse.y)
   end
 
-  printCollidersInfo(colliders)
-  printThingsInfo(things)
+  CollidersPrintInfo(colliders)
+  ThingsPrintInfo(things)
 
   if mousePressed.middle then
     settings.pointerEnabled = not settings.pointerEnabled

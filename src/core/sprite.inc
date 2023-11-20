@@ -12,6 +12,10 @@ def CORE_SPRITE_INC equ 1
 include "hardware.inc"
 
 
+; Mark the end of the sprite definition.
+def SPRITE_PARTS_END equ $80
+
+
 ; SpritePart YC, XC, CHR, [OAM_ATTR]
 ; `YC`, `XC` is the location of the origin *in the tile*:
 ; - The tile will be moved such that its point (YC, XC) will be at the origin.
@@ -39,8 +43,10 @@ macro SpritePartRaw
 endm
 
 
-; Mark the end of the sprite definition.
-def SPRITE_PARTS_END equ $80
+; Marks the end of the sprite.
+macro SpriteEnd
+	db SPRITE_PARTS_END
+endm
 
 
 /***********************************************************

@@ -39,10 +39,10 @@ sprite_Ball_B_f0:
 	db SPRITE_PARTS_END
 
 sprite_Ball_D_f0:
-	SpritePart tBall_C0_cy - 3, tBall_C0_cx + 3, tBall_C0
-	SpritePart tBall_C1_cy - 5, tBall_C1_cx - 2, tBall_C1
-	SpritePart tBall_C2_cy - 2, tBall_C2_cx + 1, tBall_C2
-	SpritePart tBall_C3_cy - 4, tBall_C3_cx - 1, tBall_C3
+	SpritePart tBall_C0_cy - 3, tBall_C0_cx + 3, tBall_C0, OAMF_PRI
+	SpritePart tBall_C1_cy - 5, tBall_C1_cx - 2, tBall_C1, OAMF_PRI
+	SpritePart tBall_C2_cy - 2, tBall_C2_cx + 1, tBall_C2, OAMF_PRI
+	SpritePart tBall_C3_cy - 4, tBall_C3_cx - 1, tBall_C3, OAMF_PRI
 	db SPRITE_PARTS_END
 
 ; Rolling Ballder animated (2x2) sprite
@@ -50,10 +50,9 @@ sprite_Ball_D_f0:
 sprite_Ballder_rolling:
 	for I, tBallder_rolling_framecount * 2
 		def _SRC_FRAME equ I % tBallder_rolling_framecount
+		def _OAM_ATTR = 0
 		if I >= tBallder_rolling_framecount
-			def _OAM_ATTR equ QUARTET_FLIP_BOTH
-		else
-			def _OAM_ATTR equ 0
+			def _OAM_ATTR |= QUARTET_FLIP_BOTH
 		endc
 
 		.frame_{X:I}:

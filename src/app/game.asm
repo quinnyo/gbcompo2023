@@ -144,6 +144,7 @@ update:
 	call oam_clear
 	call shotctl_update
 	call things_draw
+	call Ball_draw
 
 	ret
 
@@ -168,7 +169,6 @@ _ball_update:
 	ld [wGame.ballstat], a
 
 	call Ball_process
-	call Ball_draw
 
 	call _check_ball_status
 

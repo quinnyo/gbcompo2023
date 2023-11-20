@@ -172,8 +172,10 @@ Ball_reset::
 	or b
 	jr z, :+
 	ld a, b
+	inc a
 	ld [wBall.x + 1], a
 	ld a, c
+	sub 2
 	ld [wBall.y + 1], a
 :
 

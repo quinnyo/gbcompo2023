@@ -168,6 +168,7 @@ _ball_update:
 	ld [wGame.ballstat], a
 
 	call Ball_process
+	call Ball_draw
 
 	call _check_ball_status
 

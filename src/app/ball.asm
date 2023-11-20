@@ -634,7 +634,7 @@ check_stationary:
 Ball_motion:
 	ld a, [wBall.status]
 	and fBallStatShotEnded | fBallStatFreeze
-	jr nz, Ball_draw
+	ret nz
 
 	; push MSB position to the stack before moving
 	ld a, [wBall.x + 1]
@@ -673,10 +673,12 @@ endr
 	call sound_try_play
 :
 
-	jr Ball_draw
+	ret
 
 
-Ball_draw:
+; Draw main ball sprite
+; @mut: AF, BC, DE, HL
+Ball_draw::
 	ld hl, wBallSprite
 	call sprite_update
 	call oam_next_recall

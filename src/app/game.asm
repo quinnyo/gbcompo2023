@@ -102,7 +102,7 @@ update:
 
 .modal_clear
 	bit PADB_A, b
-	jr z, .tick ; wait till A pressed
+	jr z, .modal_update_done ; wait till A pressed
 	ld a, [wSettings.level]
 	inc a
 	ld [wSettings.level], a
@@ -129,23 +129,28 @@ update:
 	bit PADB_START, b
 	jp nz, pause_toggle
 
-.tick
-	; game timers
-	ld a, [wGame.tick1]
-	inc a
-	ld [wGame.tick1], a
-	bit 0, a
-	jr nz, :+
-	ld a, [wGame.tick2]
-	inc a
-	ld [wGame.tick2], a
-:
+.modal_update_done
 
+	call _Game_update_timers
 	call oam_clear
 	call shotctl_update
 	call things_draw
-	call Ball_draw
 
+	ld hl, wShot_phase
+	ld a, [hl]
+	cp ShotPhase__ACTION
+	call nc, Ball_draw
+
+	ret
+
+
+_Game_update_timers:
+	ld hl, wGame.tick1
+	inc [hl]
+	bit 0, [hl]
+	ret nz
+	ld hl, wGame.tick2
+	inc [hl]
 	ret
 
 

@@ -8,6 +8,9 @@ macro ShotPhaseEnumDef
 	def ShotPhase__COUNT = 0
 	rept _NARG
 		redef _KEY equs strupr("\1")
+		assert fatal, strcmp("{_KEY}", "_ALL") != 0, "ShotPhase__ALL is a reserved keyword."
+		assert fatal, strcmp("{_KEY}", "_COUNT") != 0, "ShotPhase__COUNT is a reserved keyword."
+		assert fatal, strin("{_KEY}", "_KEY") != 1, "ShotPhase__KEY is a reserved keyword."
 		def ShotPhase_{_KEY} equ ShotPhase__COUNT
 		if strin("\1", "_") != 1 ; start with underscore => tag, not actual state
 			def ShotPhase__KEY{u:ShotPhase__COUNT} equs "{_KEY}"
@@ -29,7 +32,7 @@ macro ShotPhaseFuncDef
 	purge _KEY, _FUNC
 endm
 
-	ShotPhaseEnumDef new, aimxy, swing, ball, done
+	ShotPhaseEnumDef new, _setup, aimxy, swing, _action, ball, _end, done
 
 
 /*

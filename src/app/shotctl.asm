@@ -86,7 +86,6 @@ shotctl_phase_change::
 	ret
 
 
-	ShotPhaseFuncDef new
 	ShotPhaseFuncDef swing
 _shotctl_dummy_update:
 	ld a, b

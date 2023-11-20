@@ -134,6 +134,7 @@ update:
 	call _Game_update_timers
 	call oam_clear
 	call shotctl_update
+	call Tee_draw
 	call things_draw
 
 	ld hl, wShot_phase

@@ -32,7 +32,7 @@ macro ShotPhaseFuncDef
 	purge _KEY, _FUNC
 endm
 
-	ShotPhaseEnumDef new, _setup, aimxy, swing, _action, ball, _end, done
+	ShotPhaseEnumDef _start, new, _setup, aimxy, swing, _action, ball, _end, done
 
 
 /*

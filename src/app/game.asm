@@ -2,19 +2,13 @@ include "common.inc"
 include "app/ball.inc"
 include "app/shotctl.inc"
 
-def bStatusUpdate equ 0
-def bStatusClear equ 5
-def bStatusPaused equ 6
-def bStatusShotEnded equ 7
+def bStatusUpdate    equ 0 ; status needs update
+def bStatusClear     equ 5 ; stage cleared
+def bStatusPaused    equ 6 ; game paused
 
-def fStatusUpdate equ 1 << bStatusUpdate
-def fStatusClear equ 1 << bStatusClear
-def fStatusPaused equ 1 << bStatusPaused
-def fStatusShotEnded equ 1 << bStatusShotEnded
-
-def fStatusPromptActive equ fStatusClear | fStatusPaused | fStatusShotEnded
-
-def MAX_SHOTS equ 99
+def fStatusUpdate    equ 1 << bStatusUpdate
+def fStatusClear     equ 1 << bStatusClear
+def fStatusPaused    equ 1 << bStatusPaused
 
 
 section "GameImpl", rom0
@@ -26,13 +20,16 @@ Game::
 	ldh [rSCX], a
 	ldh [rSCY], a
 	ld [wGame.status], a
-	ld [wGame.shot_count], a
+	ld [wGame.ballstat], a
 	ld [wGame.tick1], a
 	ld [wGame.tick2], a
 	ld [wMsgBoxX], a
 	ld [wMsgBoxY], a
 	ld [wMsgBoxWidth], a
 	ld [wMsgBoxHeight], a
+
+	ld a, fStatusUpdate
+	ld [wGame.status], a
 
 	ld hl, wMsgBoxBuffer
 	ld bc, MSG_BOX_BUFFER_SIZE
@@ -65,14 +62,19 @@ if def(DEBUG_BALL)
 endc
 
 	call shotctl_init
-	call start_next_shot
+	call shotctl_start_next_shot
+	ld hl, wShot_event_callback
+	ld a, low(_Game_on_shot_phase_changed)
+	ld [hl+], a
+	ld [hl], high(_Game_on_shot_phase_changed)
+
 	call musctl_stop
 
 	ret
 
 
 .main_iter::
-	call update
+	call _Game_update
 
 if def(DEBUG_BALL)
 	call Ball_dbg_update
@@ -87,49 +89,27 @@ endc
 	ret
 
 
-update:
+_Game_on_shot_phase_changed:
+	; show status line
+	call build_status_stats
+	call status_update
+
+	ret
+
+
+_Game_update:
 	; update active modal prompt (if any)
 	ld a, [wInput.pressed]
 	ld b, a
+
 	ld a, [wGame.status]
 	bit bStatusClear, a
-	jr nz, .modal_clear
-	bit bStatusShotEnded, a
-	jr nz, .modal_shot_ended
+	jr nz, _Game_update_stage_cleared
 	bit bStatusPaused, a
-	jr nz, .modal_paused
-	jr .modal_none
+	jr nz, _Game_update_paused
 
-.modal_clear
-	bit PADB_A, b
-	jr z, .modal_update_done ; wait till A pressed
-	ld a, [wSettings.level]
-	inc a
-	ld [wSettings.level], a
-	ld a, ModeLevelSelect
-	jp Main_mode_change
-
-.modal_shot_ended
-	bit PADB_A, b
-	call nz, start_next_shot
-	ret
-
-.modal_paused
-	bit PADB_SELECT, b
-	jr z, :+
-	ld a, ModeLevelSelect
-	jp Main_mode_change
-:
-
-	bit PADB_START, b
-	ret z
-	jp pause_toggle
-
-.modal_none
 	bit PADB_START, b
 	jp nz, pause_toggle
-
-.modal_update_done
 
 	call _Game_update_timers
 	call oam_clear
@@ -145,6 +125,32 @@ update:
 	ret
 
 
+; @param B: input state (pressed)
+_Game_update_stage_cleared:
+	bit PADB_A, b
+	ret z ; wait till A pressed
+	ld a, [wSettings.level]
+	inc a
+	ld [wSettings.level], a
+	ld a, ModeLevelSelect
+	jp Main_mode_change
+	ret
+
+
+; @param B: input state (pressed)
+_Game_update_paused:
+	bit PADB_SELECT, b
+	jr z, :+
+	ld a, ModeLevelSelect
+	jp Main_mode_change
+:
+
+	bit PADB_START, b
+	ret z
+	jp pause_toggle
+	ret
+
+
 _Game_update_timers:
 	ld hl, wGame.tick1
 	inc [hl]
@@ -156,32 +162,24 @@ _Game_update_timers:
 
 
 	ShotPhaseFuncDef ball
-_ball_update:
+_ball_phase_update:
 	ld a, b
 	cp ShotPhaseStatus_INIT
 	ret z
 	cp ShotPhaseStatus_ENTER
-	jr nz, :+
-	; just entered action/ball phase
-	call Ball_launch
-	call build_status_stats
-	ld a, ShotPhaseStatus_OK
-	ld [wShot_phase_status], a
-	ret
-:
+	jr z, _ball_phase_entered
 
+	; Check if ball stuck / stopped
+	ld hl, wGame.ballstat
+	ld a, [hl]
+	and fBallStatShotEnded
+	jr nz, .ball_done
 	; save ball status before Ball_process
 	ld a, [wBall.status]
-	ld [wGame.ballstat], a
-
+	ld [hl], a
 	call Ball_process
-
 	call _check_ball_status
-
-	; Check if ball stuck / stopped / shot ended
-	ld a, [wBall.status]
-	and fBallStatShotEnded
-	ret nz
+.ball_done
 
 	; collide things
 	ld a, [wBall + Ball_x + 1]
@@ -212,6 +210,24 @@ _ball_update:
 	ret
 
 
+; Launch ball
+_ball_phase_entered:
+	; just entered action/ball phase
+	call Ball_reset
+
+	; setup ball from ShotConfig
+	ld de, wShotCfg_vx
+	ld hl, wBall.vx
+	ld c, 4 ; 2 words (X,Y)
+	call mem_copy_short
+
+	call Ball_launch
+	call build_status_stats
+	ld a, ShotPhaseStatus_OK
+	ld [wShot_phase_status], a
+	ret
+
+
 _check_ball_status:
 	; get changed ball status
 	ld a, [wGame.ballstat]
@@ -220,13 +236,14 @@ _check_ball_status:
 	ld d, a
 	xor e
 	and d
+	ret z ; no change
 
 	and fBallStatShotEnded
 	ret z
-
 	; shot ended...
-	ld hl, wGame.status
-	set bStatusShotEnded, [hl]
+
+	ld a, ShotPhaseStatus_NEXT
+	ld [wShot_phase_status], a
 
 	; handle OOB or Stopped
 	bit bBallStatOOB, a
@@ -234,7 +251,7 @@ _check_ball_status:
 	; Ball Stopped
 	ld de, sStatusNextShot
 	ld bc, sStatusNextShot_len
-	call build_status_text
+	call status_set_text
 	ret
 .ball_oob
 	; OOB SFX
@@ -243,7 +260,7 @@ _check_ball_status:
 	; show OOB statusline
 	ld de, sStatusOOB
 	ld bc, sStatusOOB_len
-	call build_status_text
+	call status_set_text
 	ret
 
 
@@ -264,25 +281,6 @@ _things_smashed:
 	jp sound_play
 
 
-start_next_shot:
-	ld a, [wGame.shot_count]
-	cp MAX_SHOTS
-	ret nc
-	inc a
-	ld [wGame.shot_count], a
-
-	call shotctl_start_next_shot
-	call Ball_reset
-
-	ld a, [wGame.status]
-	res bStatusShotEnded, a
-	ld [wGame.status], a
-
-	call build_status_stats
-
-	ret
-
-
 pause_toggle:
 	ld a, [wGame.status]
 	bit bStatusPaused, a
@@ -300,7 +298,7 @@ pause_toggle:
 
 	ld de, sStatusPaused
 	ld bc, sStatusPaused_len
-	call build_status_text
+	call status_set_text
 	ret
 
 
@@ -310,9 +308,11 @@ macro PutChar
 	ld [hl+], a
 endm
 
+
+; Set status bar content
 ; @param DE: string
 ; @param BC: string length
-build_status_text:
+status_set_text:
 	ld hl, wStatusLine
 	call mem_copy
 
@@ -331,7 +331,7 @@ build_status_stats:
 	ld hl, wStatusLine
 	PutChar "<Sh>"
 	PutChar "<ot:>"
-	ld a, [wGame.shot_count]
+	ld a, [wShot_count]
 	call digi_print_u8_99
 	PutChar " "
 	PutChar "<Hut>"
@@ -352,15 +352,16 @@ build_status_stats:
 
 
 ; show status line
+; @mut: AF, BC, DE, HL
 status_update:
+	ld a, [wGame.status]
+	res bStatusUpdate, a
+	ld [wGame.status], a
+
 	ld hl, STATUS_ORIGIN
 	ld de, wStatusLine
 	ld bc, STATUS_LINE_LEN
 	call vmem_copy
-
-	ld a, [wGame.status]
-	res bStatusUpdate, a
-	ld [wGame.status], a
 
 	ld a, SCRN_Y - 8
 	ldh [rWY], a
@@ -543,7 +544,6 @@ section "GameState", wram0
 
 wGame::
 	.status: db
-	.shot_count: db ; number of shots taken this stage
 	.ballstat: db ; last ball status
 	.tick1:: db
 	.tick2:: db
@@ -554,6 +554,7 @@ wMsgBoxWidth: db
 wMsgBoxHeight: db
 wMsgBoxBuffer: ds MSG_BOX_BUFFER_SIZE
 
+; Status bar content buffer
 wStatusLine:
 for i, STATUS_LINE_COUNT
 	.line{u:i} ds STATUS_LINE_LEN

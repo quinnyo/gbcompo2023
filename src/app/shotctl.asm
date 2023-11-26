@@ -1,18 +1,38 @@
 include "common.inc"
 include "app/shotctl.inc"
 
+def MAX_SHOTS equ 99
 
 section "wShot", wram0
 
 wShot_phase:: db
 wShot_phase_status:: db
+wShot_count:: db
+
+; Pointer to shotctl event listener. Set to 0 to disable.
+; shot phase changed: Listener will be called when shot phase changes.
+wShot_event_callback:: dw
+
+wShotCfg_vx:: dw
+wShotCfg_vy:: dw
 
 
 section "shotctl", rom0
 
 shotctl_init::
+	ld hl, wShot_phase
+	xor a
+	ld [hl+], a ; wShot_phase
 	ld a, ShotPhaseStatus_INIT
-	ld [wShot_phase_status], a
+	ld [hl+], a ; wShot_phase_status
+	xor a
+	ld [hl+], a ; wShot_count
+	ld [hl+], a ; wShot_event_callback.0
+	ld [hl+], a ; wShot_event_callback.1
+	ld [hl+], a ; wShotCfg_vx.0
+	ld [hl+], a ; wShotCfg_vx.1
+	ld [hl+], a ; wShotCfg_vy.0
+	ld [hl+], a ; wShotCfg_vy.1
 
 for I, ShotPhase__COUNT
 	ld b, ShotPhaseStatus_INIT
@@ -25,6 +45,13 @@ endr
 shotctl_start_next_shot::
 	xor a
 	call shotctl_phase_change
+
+	ld hl, wShot_count
+	ld a, MAX_SHOTS - 1
+	cp [hl]
+	jr c, :+
+	inc [hl]
+:
 
 	ret
 
@@ -58,32 +85,35 @@ for I, ShotPhase__COUNT
 endr
 
 _error_bad_phase:
-	ld b, b
-	ret
+	rst panic
 
 
 ; @mut: AF
 shotctl_phase_next::
 	ld a, [wShot_phase]
 	inc a
+	cp ShotPhase__COUNT
+	jr nc, shotctl_start_next_shot
 	jr shotctl_phase_change
 
 
 ; @mut: AF
 shotctl_phase_back::
 	ld a, [wShot_phase]
+	and a
+	ret z
 	dec a
 	jr shotctl_phase_change
 
 
 ; @param A: phase
-; @mut: AF
+; @mut: AF, HL
 shotctl_phase_change::
 	ld [wShot_phase], a
 	ld a, ShotPhaseStatus_ENTER
 	ld [wShot_phase_status], a
 
-	ret
+	jr _shotctl_event
 
 
 	ShotPhaseFuncDef swing
@@ -94,6 +124,17 @@ _shotctl_dummy_update:
 	ld a, ShotPhaseStatus_NEXT
 	ld [wShot_phase_status], a
 
-	ShotPhaseFuncDef done
-
 	ret
+
+
+; Call the event callback if callback != 0
+; @mut: AF, HL
+_shotctl_event:
+	ld hl, wShot_event_callback
+	ld a, [hl+]
+	ld h, [hl]
+	ld l, a
+
+	or h
+	ret z
+	jp hl

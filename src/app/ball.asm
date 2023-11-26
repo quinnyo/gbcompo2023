@@ -106,26 +106,6 @@ wMotionY: dw
 
 
 ;*********************************************************************
-;* Ball Data (ROM)
-;*********************************************************************
-
-section "Ball_Data", romx
-
-
-BallDefault:
-	.status: db fBallStatFreeze
-	.collide: db 0
-	.stationary: db 0
-	.x: dw BALL_AIMING_XPOS
-	.y: dw BALL_AIMING_YPOS
-	.vx: dw 0
-	.vy: dw 0
-.end
-
-assert (BallDefault.end - BallDefault) == Ball_sz
-
-
-;*********************************************************************
 ;* Ball Impl (ROM)
 ;*********************************************************************
 
@@ -136,6 +116,7 @@ section "Ball_Impl", rom0
 *	Initialise ball systems
 */
 Ball_init::
+	xor a
 	ld c, BallSprite_sz
 	ld hl, wBallSprite
 :
@@ -147,10 +128,19 @@ Ball_init::
 
 ; Reset ball (to tee) and start aiming next shot.
 Ball_reset::
-	ld de, BallDefault
-	ld bc, Ball_sz
 	ld hl, wBall
-	call mem_copy
+	ld bc, Ball_sz
+	ld d, 0
+	call mem_fill
+
+	ld hl, wBall.status
+	ld [hl], fBallStatFreeze
+
+	call Ball_get_start_position
+	ld a, b
+	ld [wBall.x + 1], a
+	ld a, c
+	ld [wBall.y + 1], a
 
 	ld hl, wBallSprite
 	ld de, anim_Ballder_tee
@@ -162,22 +152,6 @@ Ball_reset::
 	ld [hl+], a
 	ld [hl+], a
 	ld [hl+], a
-
-	; load aiming (tee) position from map
-	ld a, [wMap.tee_x]
-	ld b, a
-	ld a, [wMap.tee_y]
-	ld c, a
-	; Assume map tee of (0,0) is unset... Only use map tee if it's not (0,0)
-	or b
-	jr z, :+
-	ld a, b
-	inc a
-	ld [wBall.x + 1], a
-	ld a, c
-	sub 2
-	ld [wBall.y + 1], a
-:
 
 	ret
 
@@ -217,6 +191,7 @@ Ball_process::
 	ret
 
 
+; @mut: AF, C, DE, HL
 Ball_launch::
 	; clear freeze status
 	ld hl, wBall.status
@@ -229,6 +204,29 @@ Ball_launch::
 
 	ld hl, snd_ball_hit
 	call sound_play
+
+	ret
+
+
+; Get ball starting position (on the tee)
+; @return B,C: tee position X,Y
+; @mut: AF, BC
+Ball_get_start_position::
+	ld a, [wMap.tee_x]
+	and a
+	jr nz, :+
+	ld a, BALL_AIMING_XPOS
+:
+	inc a
+	ld b, a
+
+	ld a, [wMap.tee_y]
+	and a
+	jr nz, :+
+	ld a, BALL_AIMING_YPOS
+:
+	sub 2
+	ld c, a
 
 	ret
 

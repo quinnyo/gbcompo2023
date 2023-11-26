@@ -1,5 +1,14 @@
 include "common.inc"
 
+
+section "rst_panic", rom0[$00]
+panic::
+	di
+	ld b, b
+	stop
+	jr panic ; shouldn't reach here, but...
+
+	StaticReserve $08 - @
 section "rst_jump_switch", rom0[$08]
 ; Jump into address table immediately following callsite.
 ; DOES NOT RETURN
@@ -19,7 +28,7 @@ jump_switch::
 	ld l, a
 	jp hl
 
-
+	StaticReserve $18 - @
 section "rst_rom_sel", rom0[$18]
 ; Select ROMX bank.
 ; @param A: bank number to swap to
@@ -31,6 +40,7 @@ endc
 	ret
 
 
+	StaticReserve $40 - @
 section "IRQ_VBlank", rom0[$0040]
 IRQ_VBlank: jp ISR_VBlank
 
@@ -47,6 +57,7 @@ IRQ_VBlank: jp ISR_VBlank
 ; IRQ_P1: reti
 
 
+	StaticReserve $0100 - @
 section "Header", rom0[$0100]
 	nop
 	jp EntryPoint

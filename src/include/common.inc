@@ -93,6 +93,21 @@ endc
 endm
 
 
+; StaticReserve LEN, [VAL]
+; Reserve LEN bytes of memory at the current location.
+; Fills the region with VAL, if provided. VAL must be a single byte.
+macro StaticReserve
+_reserved\@:
+	if _NARG == 1
+		ds (\1)
+	elif _NARG == 2
+		ds (\1), (\2)
+	else
+		fail "StaticReserve expects 1 or 2 args. Got {_NARG}: (\#)."
+	endc
+endm
+
+
 ; Start a new jump table
 macro JumpSwitchReset
 	redef _JumpSwitchCount = 0

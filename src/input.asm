@@ -117,16 +117,20 @@ input_update::
 ; @param B: input state bitmask
 ; @param D,E: current X,Y state
 ; @param H,L: delta X,Y magnitude
-; @ret D,E: updated X,Y state
+; @ret D,E: updated X,Y state (clamped, 0..255)
 InputXY_read::
 	ld a, d
 	bit PADB_RIGHT, b
 	jr z, :+
 	add h
+	jr nc, :+
+	ld a, $FF
 :
 	bit PADB_LEFT, b
 	jr z, :+
 	sub h
+	jr nc, :+
+	xor a
 :
 	ld d, a
 
@@ -134,10 +138,14 @@ InputXY_read::
 	bit PADB_DOWN, b
 	jr z, :+
 	add l
+	jr nc, :+
+	ld a, $FF
 :
 	bit PADB_UP, b
 	jr z, :+
 	sub l
+	jr nc, :+
+	xor a
 :
 	ld e, a
 

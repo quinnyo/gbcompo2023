@@ -38,10 +38,13 @@ MAPPY   := $(PYTHON) tools/map.py
 
 ROM = $(BINDIR)/$(ROMNAME).$(ROMEXT)
 
+# Additional rgbasm -D vars from CLI
+DEFS ?=
+
 # Argument constants
 INCDIRS  = src/ src/include/
 WARNINGS = all extra error
-DEFVARS  = DEBUG MKMBC=$(MBC)
+DEFVARS  = MKMBC=$(MBC) $(DEFS)
 ASFLAGS  = -p $(PADVALUE) $(addprefix -i,$(INCDIRS)) $(addprefix -W,$(WARNINGS)) $(addprefix -D,$(DEFVARS))
 LDFLAGS  = -p $(PADVALUE)
 FIXFLAGS = -p $(PADVALUE) -v -i "$(GAMEID)" -k "$(LICENSEE)" -l $(OLDLIC) -m $(MBC) -n $(VERSION) -r $(SRAMSIZE) -t $(TITLE)

@@ -16,6 +16,13 @@ else
 	def NOMBC equ 1
 endc
 
+if def(DEVMODE)
+	if def(DEBUG)
+		purge DEBUG
+	endc
+	def DEBUG equ 1
+endc
+
 ; Size of the tilemap in bytes.
 def BGMAP_LEN equ $0400
 

@@ -296,7 +296,7 @@ macro MapDef
 	MapDefRaw \#
 endm
 
-if def(INCL_TESTMAP)
+if def(DEVMODE)
 	MapDef testmap, "Testmap?!"
 endc
 

@@ -255,11 +255,12 @@ _tcx_Instance::
 
 	; setup machine for subprogram
 	ld a, fThingMachineStatus_OK
-	ld [hl+], a
+	ld hl, wThingMachine.status
+	ld [hl+], a       ; status
 	ld a, e
 	ld [hl+], a       ; prg.0
 	ld a, d
-	ld [hl+], a       ; prg.0
+	ld [hl+], a       ; prg.1
 
 	call tcm_run
 

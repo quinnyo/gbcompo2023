@@ -154,11 +154,11 @@ MainLoop:
 	nop
 .vblank_wait_entry
 	; wait for vblank interrupt
-	ld a, [hVBlankF]
+	ldh a, [hVBlankF]
 	and a
 	jr z, .vblank_wait
 	xor a
-	ld [hVBlankF], a
+	ldh [hVBlankF], a
 
 	jr MainLoop
 

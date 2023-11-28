@@ -208,7 +208,7 @@ endm
 ; initial state, followed by two successively more destroyed versions.
 macro PlaceThingLegacy
 	ThingcNew
-	ThingcDrawOAM tThings + (\3), (\4)
+	ThingcDrawOAM (\3), (\4)
 	ThingcPosition (\2), (\1)
 	ThingcCollideTile
 	ThingcHits 1
@@ -216,13 +216,13 @@ macro PlaceThingLegacy
 	ThingcSave
 	ThingcGoto .\@_done
 .\@_0:
-	ThingcDrawOAM tThings + (\3) + 1, (\4)
+	ThingcDrawOAM (\3) + 1, (\4)
 	ThingcHits 1
 	ThingcDieGoto .\@_1
 	ThingcSave
 	ThingcStop
 .\@_1:
-	ThingcDrawOAM tThings + (\3) + 2, (\4)
+	ThingcDrawOAM (\3) + 2, (\4)
 	ThingcDieGoto 0
 	ThingcSave
 	ThingcStop

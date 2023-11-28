@@ -291,7 +291,7 @@ class Map:
                 oam_attr = self.gid_to_oam_attr(obj.gid)
                 pos_x = round(obj.coordinates.x)
                 pos_y = round(obj.coordinates.y - 8)
-                lines.append(f"\t\tPlaceThingLegacy {pos_y}, {pos_x}, {chr_code}, {oam_attr}")
+                lines.append(f"\t\tPlaceThingLegacy {pos_y}, {pos_x}, tThings + {chr_code}, {oam_attr}")
             things_chunk = ASM_THINGS.replace(
                 "%THING_COUNT%", str(len(self.things)))
             things_chunk = things_chunk.replace("%THINGS%", "\n".join(lines))

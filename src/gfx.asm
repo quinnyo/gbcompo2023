@@ -82,6 +82,7 @@ gfx_init::
 
 	ld hl, wFade
 	ld c, Fade_sz
+	xor a
 	call mem_fill_byte
 
 	ret

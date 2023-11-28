@@ -170,6 +170,7 @@ tcm_step::
 	dw _tcx_Instance
 	dw _tcx_Position
 	dw _tcx_DrawOAM
+	dw _tcx_DrawSprite
 	dw _tcx_DieGoto
 
 .err
@@ -297,6 +298,18 @@ _tcx_DrawOAM::
 	ld [hl+], a       ; drawable.0 (OAM_CHR)
 	ld a, d
 	ld [hl+], a       ; drawable.1 (OAM_ATTR)
+	ret
+
+
+; @param DE: *Sprite
+_tcx_DrawSprite::
+	ld hl, wThingCache.draw_mode
+	ld a, fThingDrawMode_Sprite
+	ld [hl+], a       ; draw_mode
+	ld a, e
+	ld [hl+], a       ; drawable.0
+	ld a, d
+	ld [hl+], a       ; drawable.1
 	ret
 
 

@@ -2,6 +2,7 @@ include "common.inc"
 include "app/world.inc"
 include "gfxmap.inc"
 
+def THINGS_BUFFER_SIZE equ Thing_sz * ThingsMax
 
 section "ThingsState", wram0
 wThingsInfo::
@@ -11,9 +12,13 @@ wThingsInfo::
 	.count::     db
 	.next::      dw ; pointer to end of wThings array
 
-wThings:: ds Thing_sz * ThingsMax
-def DRAW_LIST_SIZE equ 5 * ThingsMax
-wDrawList: ds DRAW_LIST_SIZE
+wThings:: ds THINGS_BUFFER_SIZE
+
+section "ThingCache", hram
+hThingCache:
+	.x: db
+	.y: db
+	.drawable: dw
 
 section "ThingsImpl", rom0
 
@@ -56,7 +61,7 @@ things_init::
 	ld d, fThingStatus_VOID
 	call mem_fill
 
-	jp _clear_draw_list
+	ret
 
 
 ; @param D: status
@@ -211,19 +216,45 @@ _Thing_die:
 
 
 ; Draw all the things
-; @mut: A, B, DE, HL
+; @mut: AF, BC, DE, HL
 things_draw::
-	call _clear_draw_list
 	ld a, [wThingsInfo.count]
 	and a
 	ret z
-	ld e, a
 	ld bc, wThings
-	ld hl, wDrawList
+	call oam_next_recall
+
 .loop_things
-	ld a, [bc] ; ThingInstance.status
+	ld a, [bc] ; status
 	bit bThingStatus_VOID, a
-	jr z, .draw
+	jr nz, .next
+
+	inc bc ; status
+	inc bc ; collider
+
+	ld a, [bc]
+	inc bc
+	ldh [hThingCache.x], a
+	ld a, [bc]
+	inc bc
+	ldh [hThingCache.y], a
+	ld a, [bc]
+	inc bc
+	ld d, a
+	ld a, [bc]
+	inc bc
+	ldh [hThingCache.drawable + 0], a
+	ld a, [bc]
+	inc bc
+	ldh [hThingCache.drawable + 1], a
+
+	call _draw_cached_thing
+
+	inc bc ; on_die.0
+	inc bc ; on_die.1
+	jr .loop_things_continue
+
+.next
 	ld a, Thing_sz
 	add c
 	ld c, a
@@ -232,70 +263,52 @@ things_draw::
 	ld b, a
 	jr .loop_things_continue
 
-.draw
-	inc bc ; status
-	inc bc ; collider
-	; position
-	ld a, [bc]
-	inc bc
-	ld [hl+], a ; X
-	ld a, [bc]
-	inc bc
-	ld [hl+], a ; Y
-	; draw_mode
-	ld a, [bc]
-	inc bc
-	ld [hl+], a
-	; drawable
-	ld a, [bc]
-	inc bc
-	ld [hl+], a ; drawable.0
-	ld a, [bc]
-	inc bc
-	ld [hl+], a ; drawable.1
-	inc bc ; on_die.0
-	inc bc ; on_die.1
 .loop_things_continue
-	dec e
-	jr nz, .loop_things
-
-	call oam_next_recall
-
-	ld de, wDrawList
-.draw_loop:
-	ld a, [de]
-	inc de
-	ld b, a ; X
-	ld a, [de]
-	inc de
-	ld c, a ; Y
-
-	ld a, [de] ; draw_mode
-	inc de
-	; TODO: other draw_modes
-.draw_oam
-	ld a, c
-	add OAM_Y_OFS
-	ld [hl+], a ; y
 	ld a, b
-	add OAM_X_OFS
-	ld [hl+], a ; x
-	ld a, [de]
-	inc de
-	ld [hl+], a ; chr
-	ld a, [de]
-	inc de
-	ld [hl+], a ; attr
-
-	ld a, d
-	cp high(wDrawList + DRAW_LIST_SIZE)
-	jr c, .draw_loop
-	ld a, e
-	cp low(wDrawList + DRAW_LIST_SIZE)
-	jr c, .draw_loop
+	cp high(wThings + THINGS_BUFFER_SIZE)
+	jr c, .loop_things
+	ld a, c
+	cp low(wThings + THINGS_BUFFER_SIZE)
+	jr c, .loop_things
 
 	call oam_next_store
 
+	ret
+
+
+_draw_cached_thing:
+	ld a, d
+	cp fThingDrawMode_Sprite
+	jr z, _draw_sprite
+	jr _draw_oam
+
+
+_draw_sprite:
+	push bc
+	ldh a, [hThingCache.x]
+	ld b, a
+	ldh a, [hThingCache.y]
+	ld c, a
+	ldh a, [hThingCache.drawable + 0]
+	ld e, a
+	ldh a, [hThingCache.drawable + 1]
+	ld d, a
+	call sprite_draw_parts
+	pop bc
+	ret
+
+
+_draw_oam:
+	ldh a, [hThingCache.y]
+	add OAM_Y_OFS
+	ld [hl+], a ; y
+	ldh a, [hThingCache.x]
+	add OAM_X_OFS
+	ld [hl+], a ; x
+	ldh a, [hThingCache.drawable + 0]
+	ld [hl+], a ; chr
+	ldh a, [hThingCache.drawable + 1]
+	ld [hl+], a ; attr
 	ret
 
 
@@ -353,10 +366,3 @@ _things_process_collisions::
 	jr nz, .loop_things
 
 	ret
-
-
-_clear_draw_list:
-	ld hl, wDrawList
-	ld c, DRAW_LIST_SIZE
-	ld a, $FF
-	jp mem_fill_byte

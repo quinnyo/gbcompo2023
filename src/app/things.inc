@@ -2,7 +2,6 @@ if !def(APP_THINGS_INC)
 def APP_THINGS_INC equ 1
 
 include "common.inc"
-include "gfxmap.inc"
 
 
 /********************************************************************** Things *
@@ -84,8 +83,10 @@ def fThingStatus_DEFAULT    equ fThingStatus_TARGET | 1
 
 
 ; Thing.draw_mode enum
-
-def fThingDrawMode_OAM equ 0 ; Drawable is OAM object { CHR, ATTR }
+rsreset
+def fThingDrawMode_OAM      rb 1 ; Drawable is OAM object { CHR, ATTR }
+def fThingDrawMode_Sprite   rb 1 ; Drawable is pointer to Sprite
+def fThingDrawMode__COUNT   rb 0
 
 
 ; ThingMachine status flags
@@ -120,9 +121,9 @@ def tc_Goto           rb 1
 def tc_Instance       rb 1
 def tc_Position       rb 1
 def tc_DrawOAM        rb 1
+def tc_DrawSprite     rb 1
 def tc_DieGoto        rb 1
 ; def tc_CollideBox     rb 1
-; def tc_DrawSprite     rb 1
 
 def tc__COUNT         rb 0 ; Number of instructions
 
@@ -187,6 +188,13 @@ macro ThingcDrawOAM
 	elif _NARG == 2
 		db tc_DrawOAM, (\1), (\2)
 	endc
+endm
+
+
+macro ThingcDrawSprite
+	assert fatal, _NARG == 1
+	db tc_DrawSprite
+	dw (\1)
 endm
 
 

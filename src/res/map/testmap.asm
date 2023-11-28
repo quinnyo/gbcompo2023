@@ -1,9 +1,65 @@
 include "app/world.inc"
 include "core/loado.inc"
 include "gfxmap.inc"
+include "core/sprite.inc"
+
+
+def CHRSRC_A0_0     equ 0
+def CHRSRC_A0_1     equ 1
+def CHRSRC_A0_2     equ 2
+def CHRSRC_A1_0     equ 3
+def CHRSRC_A1_1     equ 4
+def CHRSRC_A1_2     equ 5
+def CHRSRC_B1_0_F1  equ 18 ; (2, 1)
+def CHRSRC_B1_1_F0  equ 19 ; (3, 1)
+def CHRSRC_B1_0_F0  equ 34 ; (2, 2)
+def CHRSRC_B1_2_F0  equ 35 ; (3, 2)
+
+rsset tThings
+def CHR_A0_0     rb 1
+def CHR_A0_1     rb 1
+def CHR_A0_2     rb 1
+def CHR_A1_0     rb 1
+def CHR_A1_1     rb 1
+def CHR_A1_2     rb 1
+def CHR_B1_0_F1  rb 1
+def CHR_B1_1_F0  rb 1
+def CHR_B1_0_F0  rb 1
+def CHR_B1_2_F0  rb 1
+
 
 section "map_testmap", romx
 
+sprite_B1_0:
+	SpritePart 0, 0, CHR_B1_0_F0, 0
+	SpritePart 8, 0, CHR_B1_0_F1, 0
+	SpriteEnd
+sprite_B1_1:
+	SpritePart 0, 0, CHR_B1_1_F0, 0
+	SpriteEnd
+sprite_B1_2:
+	SpritePart 0, 0, CHR_B1_2_F0, 0
+	SpriteEnd
+
+thing_B1_0:
+	ThingcNew
+	ThingcDrawSprite sprite_B1_0
+	ThingcPosition 32, 32
+	ThingcCollideTile
+	ThingcDieGoto thing_B1_F0_1
+	ThingcSave
+	ThingcStop
+thing_B1_F0_1:
+	ThingcDrawSprite sprite_B1_1
+	ThingcHits 1
+	ThingcDieGoto thing_B1_F0_2
+	ThingcSave
+	ThingcStop
+thing_B1_F0_2:
+	ThingcDrawSprite sprite_B1_2
+	ThingcDieGoto 0
+	ThingcSave
+	ThingcStop
 
 map_testmap::
 
@@ -53,12 +109,16 @@ map_testmap::
 	dw .chunk3 ; next chunk
 	db MapChunk_Loado
 	db LOADOCODE_CHRB_0
-	db LOADOCODE_DEST_CHR, tThings
+	db LOADOCODE_DEST_CHR, CHR_A0_0
 	LoadocodeROMB "res/map/buildings.2bpp"
 	db LOADOCODE_SRC
 	dw res_map_buildings_2bpp
-	db LOADOCODE_SRC_CHR, 0
+	db LOADOCODE_SRC_CHR, CHRSRC_A0_0
 	db LOADOCODE_CHRCOPY, 6
+	db LOADOCODE_SRC_CHR, CHRSRC_B1_0_F1
+	db LOADOCODE_CHRCOPY, 2
+	db LOADOCODE_SRC_CHR, CHRSRC_B1_0_F0
+	db LOADOCODE_CHRCOPY, 2
 	db LOADOCODE_STOP
 .chunk3:
 	dw .chunk4 ; next chunk
@@ -104,8 +164,8 @@ map_testmap::
 	dw .chunk6 ; next chunk
 	db MapChunk_Things
 	.things:
-		PlaceThingLegacy 61, 92, 3, 32
-		PlaceThingLegacy 96, 106, 3, 32
+		PlaceThingLegacy 61, 92, CHR_A1_0, 32
+		PlaceThingLegacy 96, 106, CHR_A1_0, 32
 		ThingcStop
 
 .chunk6:
@@ -114,29 +174,35 @@ map_testmap::
 	.things2:
 	.c6t0:
 		ThingcNew
-		ThingcDrawOAM tThings, 0
+		ThingcDrawOAM CHR_A0_0, 0
 		ThingcPosition 119, 112
 		ThingcCollideTile
 		ThingcDieGoto .c6t0_destroyed0
 		ThingcSave
-		ThingcStop
+		ThingcGoto .c6t2
 	.c6t0_destroyed0:
-		ThingcDrawOAM tThings + 1, 0
+		ThingcDrawOAM CHR_A0_1, 0
 		ThingcHits 1
 		ThingcDieGoto .c6t0_destroyed1
 		ThingcSave
 		ThingcStop
 	.c6t0_destroyed1:
-		ThingcDrawOAM tThings + 2, 0
+		ThingcDrawOAM CHR_A0_2, 0
 		ThingcDieGoto 0
 		ThingcSave
+		ThingcStop
+
+	.c6t2:
+		ThingcInstance thing_B1_0
+		ThingcPosition 137, 116
+		ThingcCollideTile ; hack: reapply collider because we moved the thing
+		ThingcSave
+		ThingcGoto .c6things_end
+
+	.c6things_end:
 		ThingcStop
 
 
 .chunkEnd:
 	dw 0 ; next chunk
 	db MapChunk_End
-
-
-
-println "Thing_sz: {u:Thing_sz}"

@@ -1,11 +1,10 @@
 INCLUDE "common.inc"
 
+def OAM_BUFFER_SIZE equ OAM_COUNT * sizeof_OAM_ATTRS
 
 SECTION "OAMBufferState", WRAM0, ALIGN[8]
 ; The OAM "shadow buffer".
-wOAMBuffer::
-	ds OAM_COUNT * sizeof_OAM_ATTRS
-.end
+wOAMBuffer:: ds OAM_BUFFER_SIZE
 
 ; Points to next unused OAM entry
 wNext: dw
@@ -35,7 +34,7 @@ oam_next_recall::
 oam_clear::
 	ld hl, wOAMBuffer
 	call oam_next_store
-	ld c, wOAMBuffer.end - wOAMBuffer
+	ld c, OAM_BUFFER_SIZE
 	xor a
 :
 	ld [hl+], a

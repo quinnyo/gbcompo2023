@@ -174,14 +174,14 @@ Main_mode_change::
 	xor a
 	ldh [rIF], a
 
-	ld sp, $FFFE
 	call oam_clear
 	call Mode_init
 
 	ei
 	ld a, 1
 	call gfx_fade_in
-	jp MainLoop
+
+	ret
 
 
 ; Disable the LCD (waits for vblank)

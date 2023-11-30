@@ -112,7 +112,8 @@ EntryPoint:
 
 	call audio_init
 	call audio_on
-	call lcd_off
+	call Display_init
+	call Display_lcd_off
 	call oam_init
 	call input_init
 	call loado_init
@@ -124,7 +125,7 @@ EntryPoint:
 	call world_init
 	call Mode_init
 
-	call lcd_on
+	call Display_lcd_on
 
 	; enable interrupts
 	xor a
@@ -181,25 +182,6 @@ Main_mode_change::
 	ld a, 1
 	call gfx_fade_in
 
-	ret
-
-
-; Disable the LCD (waits for vblank)
-lcd_off::
-:
-	ldh a, [rLY]
-	cp SCRN_Y
-	jr c, :-
-	xor a
-	ldh [rLCDC], a
-	ret
-
-
-; Enable the LCD
-lcd_on::
-	; Turn the LCD on, enable BG, enable OBJ
-	ld a, LCDCF_ON | LCDCF_BGON | LCDCF_OBJON | LCDCF_WINON | LCDCF_WIN9C00
-	ldh [rLCDC], a
 	ret
 
 

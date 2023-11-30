@@ -116,17 +116,6 @@ shotctl_phase_change::
 	jr _shotctl_event
 
 
-	ShotPhaseFuncDef swing
-_shotctl_dummy_update:
-	ld a, b
-	cp ShotPhaseStatus_INIT
-	ret z
-	ld a, ShotPhaseStatus_NEXT
-	ld [wShot_phase_status], a
-
-	ret
-
-
 ; Call the event callback if callback != 0
 ; @mut: AF, HL
 _shotctl_event:

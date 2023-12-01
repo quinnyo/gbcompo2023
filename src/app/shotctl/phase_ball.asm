@@ -8,6 +8,7 @@ wBallStat: db ; last ball status
 
 
 section "phase_ball", rom0
+	ShotPhaseFuncDef ball, init
 _phase_init:
 	xor a
 	ld [wBallStat], a
@@ -34,8 +35,6 @@ _ball_phase_entered:
 	ShotPhaseFuncDef ball
 _ball_phase_update:
 	ld a, b
-	cp ShotPhaseStatus_INIT
-	jr z, _phase_init
 	cp ShotPhaseStatus_ENTER
 	jr z, _ball_phase_entered
 

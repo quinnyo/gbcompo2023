@@ -41,7 +41,7 @@ wTee::
 
 
 section "TeeImpl", rom0
-
+	ShotPhaseFuncDef new, init
 _tee_new_init:
 	ret
 
@@ -49,9 +49,6 @@ _tee_new_init:
 	ShotPhaseFuncDef new
 _tee_new_update:
 	ld a, b
-	cp ShotPhaseStatus_INIT
-	jr z, _tee_new_init
-
 	cp ShotPhaseStatus_ENTER
 	jr z, _tee_new_enter
 

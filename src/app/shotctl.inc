@@ -23,6 +23,7 @@ endm
 
 macro ShotPhaseFuncDef
 	def _KEY equs strupr("\1")
+	assert def(ShotPhase_{_KEY})
 	if _NARG == 2
 		def _FUNC equs "\2"
 	else
@@ -40,7 +41,6 @@ ShotPhaseStatus `wShot_phase_status`
 Simple communication between phases and shotctl.
 */
 rsreset
-def ShotPhaseStatus_INIT     rb 1 ; (CTL ==> PHASE) Phase update is called once with status INIT during program startup.
 def ShotPhaseStatus_ENTER    rb 1 ; (CTL ==> PHASE) Set when changing to phase.
 def ShotPhaseStatus_OK       rb 1 ; (PHASE ==> CTL)
 def ShotPhaseStatus_NEXT     rb 1 ; (PHASE ==> CTL) Phase completed successfully -- move to next phase.

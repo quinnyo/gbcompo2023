@@ -10,6 +10,7 @@ wShotDone:
 
 section "ShotDone", rom0
 
+	ShotPhaseFuncDef done, init
 _shot_done_init:
 	ld hl, wShotDone.duration
 	ld a, 45
@@ -21,9 +22,6 @@ _shot_done_init:
 	ShotPhaseFuncDef done
 _shot_done_update:
 	ld a, b
-	cp ShotPhaseStatus_INIT
-	jr z, _shot_done_init
-
 	cp ShotPhaseStatus_ENTER
 	jr z, _shot_done_enter
 

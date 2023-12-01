@@ -23,9 +23,7 @@ shotctl_init::
 	ld hl, wShot_phase
 	xor a
 	ld [hl+], a ; wShot_phase
-	ld a, ShotPhaseStatus_INIT
 	ld [hl+], a ; wShot_phase_status
-	xor a
 	ld [hl+], a ; wShot_count
 	ld [hl+], a ; wShot_event_callback.0
 	ld [hl+], a ; wShot_event_callback.1
@@ -35,8 +33,7 @@ shotctl_init::
 	ld [hl+], a ; wShotCfg_vy.1
 
 for I, ShotPhase__COUNT
-	ld b, ShotPhaseStatus_INIT
-	call shot_phase_{ShotPhase__KEY{u:I}}_update
+	call shot_phase_{ShotPhase__KEY{u:I}}_init
 endr
 
 	ret

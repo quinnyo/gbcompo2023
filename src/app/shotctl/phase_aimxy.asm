@@ -21,6 +21,7 @@ wAim_Y: db
 
 
 section "aimxy", rom0
+	ShotPhaseFuncDef aimxy, init
 _aimxy_init:
 	ld a, AimDefaultX
 	ld [wAim_X], a
@@ -49,9 +50,6 @@ _aimxy_enter:
 	ShotPhaseFuncDef aimxy
 _aimxy_update:
 	ld a, b
-	cp ShotPhaseStatus_INIT
-	jr z, _aimxy_init
-
 	cp ShotPhaseStatus_ENTER
 	jr z, _aimxy_enter
 

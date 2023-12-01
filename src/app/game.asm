@@ -20,7 +20,6 @@ Game::
 	ldh [rSCX], a
 	ldh [rSCY], a
 	ld [wGame.status], a
-	ld [wGame.ballstat], a
 	ld [wGame.tick1], a
 	ld [wGame.tick2], a
 	ld [wMsgBoxX], a
@@ -114,6 +113,33 @@ _Game_update:
 	call _Game_update_timers
 	call oam_clear
 	call shotctl_update
+
+	; collide things
+	ld a, [wBall + Ball_x + 1]
+	ld b, a
+	ld a, [wBall + Ball_y + 1]
+	ld c, a
+	ld e, BallCollideThingRadius
+	call Collide_set_subject_missile
+	call Collide_all_subject
+
+	; update things
+	call things_think
+	ld a, [wThingsInfo.just_died]
+	and a
+	jr z, .things_done
+	call _things_smashed
+	call build_status_stats
+	ld a, [wThingsInfo.targets]
+	cp 0
+	jr nz, .things_done
+	ld de, msgAllDestroyed
+	call draw_msg_box
+	ld a, [wGame.status]
+	set bStatusClear, a
+	ld [wGame.status], a
+.things_done
+
 	call Tee_draw
 	call things_draw
 
@@ -158,109 +184,6 @@ _Game_update_timers:
 	ret nz
 	ld hl, wGame.tick2
 	inc [hl]
-	ret
-
-
-	ShotPhaseFuncDef ball
-_ball_phase_update:
-	ld a, b
-	cp ShotPhaseStatus_INIT
-	ret z
-	cp ShotPhaseStatus_ENTER
-	jr z, _ball_phase_entered
-
-	; Check if ball stuck / stopped
-	ld hl, wGame.ballstat
-	ld a, [hl]
-	and fBallStatShotEnded
-	jr nz, .ball_done
-	; save ball status before Ball_process
-	ld a, [wBall.status]
-	ld [hl], a
-	call Ball_process
-	call _check_ball_status
-.ball_done
-
-	; collide things
-	ld a, [wBall + Ball_x + 1]
-	ld b, a
-	ld a, [wBall + Ball_y + 1]
-	ld c, a
-	ld e, BallCollideThingRadius
-	call Collide_set_subject_missile
-	call Collide_all_subject
-
-	; update things
-	call things_think
-	ld a, [wThingsInfo.just_died]
-	and a
-	jr z, .things_done
-	call _things_smashed
-	call build_status_stats
-	ld a, [wThingsInfo.targets]
-	cp 0
-	jr nz, .things_done
-	ld de, msgAllDestroyed
-	call draw_msg_box
-	ld a, [wGame.status]
-	set bStatusClear, a
-	ld [wGame.status], a
-.things_done
-
-	ret
-
-
-; Launch ball
-_ball_phase_entered:
-	; just entered action/ball phase
-	call Ball_reset
-
-	; setup ball from ShotConfig
-	ld de, wShotCfg_vx
-	ld hl, wBall.vx
-	ld c, 4 ; 2 words (X,Y)
-	call mem_copy_short
-
-	call Ball_launch
-	call build_status_stats
-	ld a, ShotPhaseStatus_OK
-	ld [wShot_phase_status], a
-	ret
-
-
-_check_ball_status:
-	; get changed ball status
-	ld a, [wGame.ballstat]
-	ld e, a
-	ld a, [wBall.status]
-	ld d, a
-	xor e
-	and d
-	ret z ; no change
-
-	and fBallStatShotEnded
-	ret z
-	; shot ended...
-
-	ld a, ShotPhaseStatus_NEXT
-	ld [wShot_phase_status], a
-
-	; handle OOB or Stopped
-	bit bBallStatOOB, a
-	jr nz, .ball_oob
-	; Ball Stopped
-	ld de, sStatusNextShot
-	ld bc, sStatusNextShot_len
-	call status_set_text
-	ret
-.ball_oob
-	; OOB SFX
-	ld hl, snd_ball_oob
-	call sound_play
-	; show OOB statusline
-	ld de, sStatusOOB
-	ld bc, sStatusOOB_len
-	call status_set_text
 	ret
 
 
@@ -534,8 +457,6 @@ macro StrThing
 	\1: db \2
 endm
 
-	StrThing sStatusOOB, "Out of Bounds! <^A>"
-	StrThing sStatusNextShot, "Continue <^A>"
 	StrThing sStatusPaused, "Paused.  Resume <^Sta>"
 	StrThing sTipKeys, " <^U><^D><^L><^R>Aim <^A>Go"
 
@@ -544,7 +465,6 @@ section "GameState", wram0
 
 wGame::
 	.status: db
-	.ballstat: db ; last ball status
 	.tick1:: db
 	.tick2:: db
 

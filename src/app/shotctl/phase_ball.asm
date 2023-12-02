@@ -15,12 +15,8 @@ _phase_init:
 	ret
 
 
-; Launch ball
+; Setup ball (from ShotConfig) and launch it
 _ball_phase_entered:
-	; just entered action/ball phase
-	call Ball_reset
-
-	; setup ball from ShotConfig
 	ld de, wShotCfg_vx
 	ld hl, wBall.vx
 	ld c, 4 ; 2 words (X,Y)

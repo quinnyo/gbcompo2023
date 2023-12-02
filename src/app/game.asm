@@ -56,10 +56,6 @@ Game::
 	call things_start
 	call Ball_init
 
-if def(DEBUG_BALL)
-	call Ball_dbg_init
-endc
-
 	call shotctl_init
 	call shotctl_start_next_shot
 	ld hl, wShot_event_callback
@@ -74,10 +70,6 @@ endc
 
 .main_iter::
 	call _Game_update
-
-if def(DEBUG_BALL)
-	call Ball_dbg_update
-endc
 
 .do_status_update
 	; update status line

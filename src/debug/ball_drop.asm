@@ -79,8 +79,6 @@ Debug_BallDrop::
 	ld a, [wBigBall.vy+1]
 	call hexit_print_byte
 
-	call Ball_debug
-
 	ret
 
 /* Debug Strings */

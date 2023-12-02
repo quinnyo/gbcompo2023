@@ -30,10 +30,6 @@ def StoppedStationaryCount equ 90
 
 section "Ball_Sprites", romx
 
-sprite_Ball_A_f0:
-	SpritePart tBall_A_cy, tBall_A_cx, tBall_A
-	db SPRITE_PARTS_END
-
 sprite_Ball_B_f0:
 	SpritePart tBall_B_cy, tBall_B_cx, tBall_B
 	db SPRITE_PARTS_END
@@ -78,10 +74,6 @@ anim_Ballder_rolling:
 		dw sprite_Ballder_rolling.frame_{X:FRAME}
 	endr
 
-anim_Ballder_tee:
-	db 1
-	dw sprite_Ball_A_f0
-
 anim_Ballder_up:
 	db 1
 	dw sprite_Ball_B_f0
@@ -116,18 +108,15 @@ section "Ball_Impl", rom0
 *	Initialise ball systems
 */
 Ball_init::
+	; fallthrough
+
+; Reset ball state -- on tee, ready for launch.
+Ball_reset::
 	xor a
 	ld c, BallSprite_sz
 	ld hl, wBallSprite
-:
-	ld [hl+], a
-	dec c
-	jr nz, :-
+	call mem_fill_byte
 
-	; fallthrough
-
-; Reset ball (to tee) and start aiming next shot.
-Ball_reset::
 	ld hl, wBall
 	ld bc, Ball_sz
 	ld d, 0
@@ -141,10 +130,6 @@ Ball_reset::
 	ld [wBall.x + 1], a
 	ld a, c
 	ld [wBall.y + 1], a
-
-	ld hl, wBallSprite
-	ld de, anim_Ballder_tee
-	call sprite_init_anim
 
 	xor a
 	ld hl, wMotionX
@@ -680,15 +665,12 @@ endr
 Ball_draw::
 	ld hl, wBallSprite
 	call sprite_update
+	ret z
 	call oam_next_recall
 	ld a, [wBall.x + 1]
 	ld b, a
 	ld a, [wBall.y + 1]
 	ld c, a
-	ld a, [wBallSprite.sprite + 0]
-	ld e, a
-	ld a, [wBallSprite.sprite + 1]
-	ld d, a
 	call sprite_draw_parts
 	call oam_next_store
 
@@ -743,9 +725,14 @@ _sprite_frame_loop_range:
 
 ; Update sprite to display current frame.
 ; @param HL: this
+; @return DE: current frame sprite parts
+; @return F.Z: set if invalid (do not draw)
 ; @mut: AF, HL, DE
 sprite_update:
 	ld a, [hl+] ; frame_count
+	and a
+	ret z
+
 	ld e, a
 	ld d, [hl]  ; frame
 	call _sprite_frame_loop_range
@@ -756,13 +743,6 @@ sprite_update:
 	ld d, [hl]  ; seq.1
 	inc hl
 
-	; fall through
-
-; Display a frame from a sprite sequence
-; @param HL: this.sprite
-; @param  A: frame
-; @param DE: sequence (pointer to first frame in sequence)
-_sprite_display_frame:
 	; find frame in sequence
 	add a ; double A to get 2 byte offset
 	jr nc, :+
@@ -779,9 +759,14 @@ _sprite_display_frame:
 	inc de
 	ld [hl+], a ; sprite.0
 	ld a, [de]
-	inc de
-	ld [hl+], a ; sprite.1
+	; inc de
+	ld [hl-], a ; sprite.1
 
+	; return DE <== sprite
+	ld d, a
+	ld e, [hl]
+	; return NZ
+	or 1
 	ret
 
 

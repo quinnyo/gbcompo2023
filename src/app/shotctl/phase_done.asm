@@ -13,7 +13,7 @@ section "ShotDone", rom0
 	ShotPhaseFuncDef done, init
 _shot_done_init:
 	ld hl, wShotDone.duration
-	ld a, 45
+	ld a, 20
 	ld [hl+], a
 	ld [hl+], a
 	ret
@@ -28,6 +28,7 @@ _shot_done_update:
 	ld hl, wShotDone.timer
 	dec [hl]
 	jr nz, :+
+	call Ball_reset
 	ld a, ShotPhaseStatus_NEXT
 	ld [wShot_phase_status], a
 :

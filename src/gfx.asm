@@ -432,19 +432,19 @@ cpal_eggplant:
 	ColorW 27, 28, 26
 	ColorW 21, 20, 18
 	ColorW 12, 10, 11
-	ColorW 4, 4, 5
+	ColorW 7, 4, 6
 
 cpal_pinkli:
-	ColorW 27, 28, 26
+	ColorW 29, 26, 29
 	ColorW 25, 23, 24
 	ColorW 13, 9, 12
-	ColorW 7, 5, 7
+	ColorW 8, 5, 8
 
 cpal_bluen:
-	ColorW 27, 28, 26
-	ColorW 19, 22, 22
+	ColorW 27, 28, 29
+	ColorW 19, 22, 24
 	ColorW 13, 14, 19
-	ColorW 4, 4, 5
+	ColorW 6, 7, 9
 
 
 pushs

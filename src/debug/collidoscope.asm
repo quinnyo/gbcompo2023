@@ -1,3 +1,4 @@
+IF DEF(DEBUG_MODES)
 
 INCLUDE "common.inc"
 INCLUDE "input.inc"
@@ -409,3 +410,5 @@ wTerranier:
 	.xs: db
 	.y: db
 zero_end:
+
+ENDC ; DEBUG_MODES

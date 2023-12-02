@@ -1,3 +1,4 @@
+IF DEF(DEBUG_MODES)
 
 INCLUDE "common.inc"
 INCLUDE "input.inc"
@@ -325,3 +326,5 @@ wBigBall:
 .px: dw
 .vy: dw
 .py: dw
+
+ENDC ; DEBUG_MODES

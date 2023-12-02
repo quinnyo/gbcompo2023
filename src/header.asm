@@ -213,15 +213,9 @@ section "Mode", rom0
 	ModeDef "SoundTest", SoundTest_init, SoundTest_main_iter
 
 if def(DEBUG_MODES)
-	pushs
-	include "debug/ball_drop.asm"
-	include "debug/collidoscope.asm"
-	include "debug/inspect_gfx.asm"
-
 	ModeDef "Debug_BallDrop", Debug_BallDrop.init, Debug_BallDrop.main_iter
 	ModeDef "Debug_Collidoscope", Debug_Collidoscope.init, Debug_Collidoscope.main_iter
 	ModeDef "Debug_InspectGFX", Debug_InspectGFX.init, Debug_InspectGFX.main_iter
-	pops
 endc
 
 

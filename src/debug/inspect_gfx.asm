@@ -1,3 +1,5 @@
+IF DEF(DEBUG_MODES)
+
 INCLUDE "common.inc"
 INCLUDE "input.inc"
 
@@ -75,3 +77,5 @@ BGMap:
 	;  "|---_---|---_---|---^---|---_---"
 	db "         inspect_gfx"
 .end
+
+ENDC ; DEBUG_MODES

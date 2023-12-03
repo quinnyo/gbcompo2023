@@ -41,7 +41,7 @@ Game::
 
 	call gfx_load_game_obj
 	call gfx_load_bg_tiles
-
+	call stats_init
 	call Collide_init
 	call things_init
 	call tcm_init
@@ -137,8 +137,18 @@ _Game_update:
 
 	ld hl, wShot_phase
 	ld a, [hl]
-	cp ShotPhase__ACTION
-	call nc, Ball_draw
+	cp ShotPhase_BALL
+	call z, Ball_draw
+
+	ld a, [wShot_count]
+	and a
+	jr z, :+
+	ld a, [wLastBall_x]
+	ld b, a
+	ld a, [wLastBall_y]
+	ld c, a
+	call nz, Effects_draw_ball_stopped
+:
 
 	ret
 
@@ -471,3 +481,22 @@ wStatusLine:
 for i, STATUS_LINE_COUNT
 	.line{u:i} ds STATUS_LINE_LEN
 endr
+
+
+section "wStats", wram0
+
+; State of ball at end of last shot
+wLastBall_status:: db
+wLastBall_x::      db
+wLastBall_y::      db
+
+
+section "stats", rom0
+
+stats_init::
+	xor a
+	ld [wLastBall_status], a
+	ld [wLastBall_x], a
+	ld [wLastBall_y], a
+
+	ret

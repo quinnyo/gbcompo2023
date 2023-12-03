@@ -61,6 +61,16 @@ _ball_phase_update:
 	ld a, ShotPhaseStatus_NEXT
 	ld [wShot_phase_status], a
 
+	; update stats
+	ld hl, wLastBall_status
+	ld a, d
+	ld [hl+], a ; status
+	call Ball_get_screen_position
+	ld a, b
+	ld [hl+], a ; x
+	ld a, c
+	ld [hl+], a ; y
+
 	; TODO: ball stopped sound / notification?
 
 	; trigger out of bounds feedback/effects

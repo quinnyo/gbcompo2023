@@ -34,13 +34,6 @@ sprite_Ball_B_f0:
 	SpritePart tBall_B_cy, tBall_B_cx, tBall_B
 	db SPRITE_PARTS_END
 
-sprite_Ball_D_f0:
-	SpritePart tBall_C0_cy - 3, tBall_C0_cx + 3, tBall_C0, OAMF_PRI
-	SpritePart tBall_C1_cy - 5, tBall_C1_cx - 2, tBall_C1, OAMF_PRI
-	SpritePart tBall_C2_cy - 2, tBall_C2_cx + 1, tBall_C2, OAMF_PRI
-	SpritePart tBall_C3_cy - 4, tBall_C3_cx - 1, tBall_C3, OAMF_PRI
-	db SPRITE_PARTS_END
-
 ; Rolling Ballder animated (2x2) sprite
 ; 16 frames (8 unique, 8 symmetry)
 sprite_Ballder_rolling:
@@ -78,10 +71,6 @@ anim_Ballder_up:
 	db 1
 	dw sprite_Ball_B_f0
 
-anim_Ballder_stopped:
-	db 1
-	dw sprite_Ball_D_f0
-
 
 ;*********************************************************************
 ;* Ball State (WRAM)
@@ -112,10 +101,8 @@ Ball_init::
 
 ; Reset ball state -- on tee, ready for launch.
 Ball_reset::
-	xor a
-	ld c, BallSprite_sz
 	ld hl, wBallSprite
-	call mem_fill_byte
+	call sprite_init
 
 	ld hl, wBall
 	ld bc, Ball_sz
@@ -213,6 +200,16 @@ Ball_get_start_position::
 	sub 2
 	ld c, a
 
+	ret
+
+
+; @return B,C: ball's position on screen
+; @mut: AF, BC
+Ball_get_screen_position::
+	ld a, [wBall.x + 1]
+	ld b, a
+	ld a, [wBall.y + 1]
+	ld c, a
 	ret
 
 
@@ -643,11 +640,10 @@ endr
 	set bBallStatStopped, a
 	ld [wBall.status], a
 
-	; change to 'broken' sprite
-	ld hl, wBallSprite
-	ld de, anim_Ballder_stopped
-	call sprite_init_anim
-:
+; 	; clear sprite
+; 	ld hl, wBallSprite
+; 	call sprite_init
+; :
 
 	; rolling sound effect thing
 	ld a, [wBall.collide]
@@ -675,6 +671,14 @@ Ball_draw::
 	call oam_next_store
 
 	ret
+
+
+; @param HL: this
+; @mut: AF, C, HL
+sprite_init:
+	xor a
+	ld c, BallSprite_sz
+	jp mem_fill_byte
 
 
 ; @param HL: this

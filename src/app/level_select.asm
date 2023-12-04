@@ -31,6 +31,13 @@ LevelSelect::
 
 
 LevelSelect.init::
+	ld a, MAPIDX_bg_level_select
+	call Maps_data_access
+	ld e, l
+	ld d, h
+	call world_load_map
+	call world_display_tilemap
+
 	call Texto_init
 	call LevelSelect_refresh0
 	call LevelSelect_refresh1
@@ -62,7 +69,7 @@ LevelSelect.main_iter::
 	ld b, a
 	ld a, [wSettings.level]
 	ld d, a
-	cp MAP_COUNT - 1
+	cp MAPIDX_PLAYABLE_END
 	jr nc, :+
 	bit PADB_RIGHT, b
 	jr z, :+

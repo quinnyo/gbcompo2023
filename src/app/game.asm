@@ -131,14 +131,8 @@ _Game_update:
 	set bStatusClear, a
 	ld [wGame.status], a
 .things_done
-
-	call Tee_draw
 	call things_draw
-
-	ld hl, wShot_phase
-	ld a, [hl]
-	cp ShotPhase_BALL
-	call z, Ball_draw
+	call Ball_draw
 
 	ld a, [wShot_count]
 	and a

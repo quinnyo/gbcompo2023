@@ -16,6 +16,9 @@ sprite_BallTee:
 	SpritePart tBall_A_cy, tBall_A_cx, tBall_A
 	SpriteEnd
 
+anim_BallTee:
+	db 1
+	dw sprite_BallTee
 
 stepPattern_5_2:
 	.length_mask: db 3
@@ -57,6 +60,7 @@ _tee_new_update:
 	ld a, ShotPhaseStatus_NEXT
 	ld [wShot_phase_status], a
 :
+	call _sync_ball
 	ret
 
 
@@ -70,14 +74,10 @@ _tee_new_enter:
 	ld [hl+], a ; frame
 
 	ld hl, wTee.origin_x
-	ld de, wMap.tee_x
-
-	ld a, [de]  ; wMap.tee_x
-	inc de
-	inc a
+	call Ball_get_start_position
+	ld a, b
 	ld [hl+], a ; origin_x
-	ld a, [de]  ; wMap.tee_y
-	sub 2
+	ld a, c
 	ld [hl+], a ; origin_y
 	
 	ld hl, wTee.ball_x
@@ -103,6 +103,9 @@ _tee_new_enter:
 	ld a, ShotPhaseStatus_OK
 	ld [wShot_phase_status], a
 
+	ld de, anim_BallTee
+	call Ball_set_anim
+	call _sync_ball
 	ret
 
 
@@ -195,36 +198,18 @@ _do_step:
 
 
 ; @mut: AF, BC, DE, HL
-_tee_ball_draw:
+_sync_ball:
 	ld hl, wTee.origin_x
 	ld a, [hl+] ; origin_x
-	ld d, a
-	ld a, [hl+] ; origin_y
-	ld e, a
-
-	ld a, [hl+] ; ball_x
-	add d
 	ld b, a
-	ld a, [hl+] ; ball_y
-	add e
+	ld a, [hl+] ; origin_y
 	ld c, a
 
-	ld a, [hl+] ; ball_sprite.0
-	ld e, a
-	ld a, [hl+] ; ball_sprite.1
-	ld d, a
-	
-	call oam_next_recall
-	call sprite_draw_parts
-	call oam_next_store
-	ret
+	ld a, [hl+] ; ball_x
+	add b
+	ld b, a
+	ld a, [hl+] ; ball_y
+	add c
+	ld c, a
 
-
-; Draw stuff appropriate to the current ShotPhase and TeeState...
-; @mut: AF, BC, DE, HL
-Tee_draw::
-	ld hl, wShot_phase
-	ld a, [hl]
-	cp ShotPhase__ACTION
-	call c, _tee_ball_draw
-	ret
+	jp Ball_set_screen_position

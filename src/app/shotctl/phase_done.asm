@@ -28,7 +28,6 @@ _shot_done_update:
 	ld hl, wShotDone.timer
 	dec [hl]
 	jr nz, :+
-	call Ball_reset
 	ld a, ShotPhaseStatus_NEXT
 	ld [wShot_phase_status], a
 :
@@ -40,6 +39,8 @@ _shot_done_enter:
 	ld hl, wShotDone.duration
 	ld a, [hl+]
 	ld [hl+], a ; timer
+
+	call Ball_reset
 
 	ld a, ShotPhaseStatus_OK
 	ld [wShot_phase_status], a

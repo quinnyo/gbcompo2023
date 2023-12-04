@@ -180,6 +180,13 @@ Ball_launch::
 	ret
 
 
+; @param DE: pointer to sprite anim
+; @mut: AF, DE, HL
+Ball_set_anim::
+	ld hl, wBallSprite
+	jp sprite_init_anim
+
+
 ; Get ball starting position (on the tee)
 ; @return B,C: tee position X,Y
 ; @mut: AF, BC
@@ -203,13 +210,26 @@ Ball_get_start_position::
 	ret
 
 
-; @return B,C: ball's position on screen
+; @return B,C: ball's position (X,Y) on screen
 ; @mut: AF, BC
 Ball_get_screen_position::
 	ld a, [wBall.x + 1]
 	ld b, a
 	ld a, [wBall.y + 1]
 	ld c, a
+	ret
+
+
+; @param B,C: ball's new position (X,Y) on screen
+; @mut: AF, BC
+Ball_set_screen_position::
+	xor a
+	ld [wBall.x + 0], a
+	ld [wBall.y + 0], a
+	ld a, b
+	ld [wBall.x + 1], a
+	ld a, c
+	ld [wBall.y + 1], a
 	ret
 
 

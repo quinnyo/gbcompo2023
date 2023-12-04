@@ -259,6 +259,8 @@ macro MapDefRaw
 	def MAP_{u:MAP_COUNT} equs "\1"
 	def MAP_{u:MAP_COUNT}_TITLE equs \2
 	def MAP_{u:MAP_COUNT}_TITLE_LEN equ charlen("{MAP_{u:MAP_COUNT}_TITLE}")
+	def MAPIDX_\1 equ MAP_COUNT
+	export MAPIDX_\1
 
 	def MAP_COUNT += 1
 endm
@@ -283,7 +285,13 @@ endc
 	MapDef e2m1, "Beach"
 	MapDef e2m2, "Ship battle"
 
+; The index of the last playable level
+def MAPIDX_PLAYABLE_END equ MAP_COUNT
+export MAPIDX_PLAYABLE_END
+
 	MapDef win, "The End"
+
+	MapDef bg_level_select, "level_select"
 
 
 section "Maps", rom0

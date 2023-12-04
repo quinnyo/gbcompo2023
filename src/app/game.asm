@@ -134,7 +134,7 @@ _Game_update:
 	call things_draw
 	call Ball_draw
 
-	ld a, [wShot_count]
+	ld a, [wLastBall_status]
 	and a
 	jr z, :+
 	ld a, [wLastBall_x]

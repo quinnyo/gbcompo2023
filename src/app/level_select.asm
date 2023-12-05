@@ -1,10 +1,18 @@
 include "common.inc"
 include "mus.inc"
 
+/*
+/------------------\
+[< Level    #     >]
+["Title of the Map"]
+[ par:XX   best:YY ]
+\------------------/
+*/
 
-def HEADING_LINES equ 2
+def HEADING_LINES equ 3
 def HEADING_WIDTH equ 18
 def HEADING_LEN equ HEADING_LINES * HEADING_WIDTH
+def TITLE_MAX_LEN equ HEADING_WIDTH - 2
 def BORDER_TOP equ 1
 def BORDER_SIDES equ 1
 def DISPLAY_ROW equ 13
@@ -14,8 +22,13 @@ for i, HEADING_LINES
 	def DISPLAY_HEADING{u:i} equ DISPLAY_ORIGIN + (i + BORDER_TOP) * 32 + BORDER_SIDES
 endr
 
-def TXT_LEVEL equs "Level"
+def TXT_LEVEL equs "<^L> Level "
 def TXT_LEVEL_LEN equ charlen("{TXT_LEVEL}")
+def TXT_PAR equs " par:"
+def TXT_PAR_LEN equ charlen("{TXT_PAR}")
+def TXT_BEST equs "   best:"
+def TXT_BEST_LEN equ charlen("{TXT_BEST}")
+
 
 section "LevelSelect State", wram0
 
@@ -25,10 +38,11 @@ endr
 
 section "LevelSelect Mode", rom0
 
+txt_level: db "{TXT_LEVEL}"
+txt_par:   db "{TXT_PAR}"
+txt_best:  db "{TXT_BEST}"
 
 LevelSelect::
-	.txt_level: db "{TXT_LEVEL}"
-
 
 LevelSelect.init::
 	ld a, MAPIDX_bg_level_select
@@ -41,6 +55,7 @@ LevelSelect.init::
 	call Texto_init
 	call LevelSelect_refresh0
 	call LevelSelect_refresh1
+	call LevelSelect_refresh2
 	call LevelSelect_draw
 
 	ld b, MUSIC_TRACK_MUS99_INDEX
@@ -69,7 +84,7 @@ LevelSelect.main_iter::
 	ld b, a
 	ld a, [wSettings.level]
 	ld d, a
-	cp MAPIDX_PLAYABLE_END
+	cp COURSE_COUNT - 1
 	jr nc, :+
 	bit PADB_RIGHT, b
 	jr z, :+
@@ -90,6 +105,7 @@ LevelSelect.main_iter::
 	call sound_play
 	call LevelSelect_refresh0
 	call LevelSelect_refresh1
+	call LevelSelect_refresh2
 	call LevelSelect_draw
 :
 
@@ -104,19 +120,12 @@ endm
 
 
 LevelSelect_refresh0:
-	ld a, [wSettings.level]
-	; Level #
 	ld hl, wHeading0
-	; PutChar " "
-	PutChar "<^L>"
-	PutChar " "
-	ld de, LevelSelect.txt_level
+	ld de, txt_level
 	ld bc, TXT_LEVEL_LEN
 	call mem_copy
-	PutChar " "
 	ld a, [wSettings.level]
 	call digi_print_u8
-	PutChar " "
 	ld bc, wHeading0 + HEADING_WIDTH - 1
 	ld d, " "
 	call mem_fill_to
@@ -127,7 +136,7 @@ LevelSelect_refresh0:
 
 LevelSelect_refresh1:
 	ld a, [wSettings.level]
-	call Maps_index_title
+	call Courses_index_title
 	push hl
 
 	; "Title"
@@ -137,6 +146,9 @@ LevelSelect_refresh1:
 	ld a, [de]
 	inc de
 	ld c, a
+	cp TITLE_MAX_LEN
+	jr c, :+
+	ld c, TITLE_MAX_LEN
 :
 	ld a, [de]
 	inc de
@@ -152,24 +164,48 @@ LevelSelect_refresh1:
 	ret
 
 
-LevelSelect_draw:
-	ld hl, $9800 + DISPLAY_HEADING0 - 1
-	WaitVRAM
-	PutChar "<V>"
-	ld de, wHeading0
-	ld bc, HEADING_WIDTH
-	call vmem_copy
-	WaitVRAM
-	PutChar "<V>"
+LevelSelect_refresh2:
+	ld hl, wHeading2
+	ld de, txt_par
+	ld c, TXT_PAR_LEN
+	call mem_copy_short
 
-	ld hl, $9800 + DISPLAY_HEADING1 - 1
+	ld a, [wSettings.level]
+	call Courses_index_info
+	ld hl, wHeading2 + TXT_PAR_LEN
+	call digi_print_u8_99
+
+	ld de, txt_best
+	ld c, TXT_BEST_LEN
+	call mem_copy_short
+	PutChar "*"
+	PutChar "*"
+
+	ld bc, wHeading2 + HEADING_WIDTH
+	ld d, " "
+	call mem_fill_to
+
+	ret
+
+
+; @param DE: src text
+; @param HL: dest
+LevelSelect_draw_row:
 	WaitVRAM
 	PutChar "<V>"
-	ld de, wHeading1
 	ld bc, HEADING_WIDTH
 	call vmem_copy
 	WaitVRAM
 	PutChar "<V>"
+	ret
+
+
+LevelSelect_draw:
+for i, HEADING_LINES
+	ld hl, $9800 + DISPLAY_HEADING{u:i} - 1
+	ld de, wHeading{u:i}
+	call LevelSelect_draw_row
+endr
 
 	; top border
 	ld hl, $9800 + DISPLAY_ORIGIN

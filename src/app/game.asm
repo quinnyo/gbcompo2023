@@ -47,6 +47,11 @@ Game::
 	call tcm_init
 	call world_init
 	ld a, [wSettings.level]
+	cp COURSE_COUNT
+	jr c, :+
+	rst panic
+:
+	call Courses_index_mapid
 	call Maps_data_access
 	ld e, l
 	ld d, h

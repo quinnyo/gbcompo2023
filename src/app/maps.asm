@@ -97,14 +97,20 @@ for i, {COURSE_COUNT}
 endr
 
 
-; @param A: map index
-; @ret A: clamped map index
-; @mut: AF
-Maps_clamp_index::
-	cp MAP_COUNT
-	ret c
-	ld a, MAP_COUNT - 1
-	ret
+; CheckIndex SIZE
+macro CheckIndex
+if def(DEBUG)
+	cp \1
+	jr nc, _error_index_out_of_range
+endc
+endm
+
+if def(DEBUG)
+_error_index_out_of_range:
+	halt
+	nop
+	jr _error_index_out_of_range
+endc
 
 
 ; Switch to map data ROM bank and return map data pointer.
@@ -112,108 +118,53 @@ Maps_clamp_index::
 ; @ret HL: map data pointer
 ; @mut: AF, C, HL
 Maps_data_access::
+	CheckIndex MAP_COUNT
 	ld c, a
-	call Maps_index_data_bank
+	ld hl, Maps.map_data_bank
+	call _index_byte
 	rst rom_sel
 	ld a, c
-	jr Maps_index_data
-
-
-; @param A: index
-; @ret A: map data bank
-; @mut: AF, HL
-Maps_index_data_bank::
-	ld hl, Maps.map_data_bank
-	jr _Maps_index_byte
-
-
-; @param A: index
-; @ret HL: address of map data
-; @mut: AF, HL
-Maps_index_data::
 	ld hl, Maps.map_data
-	jr _Maps_index_word
+	jr _index_word
 
 
-; Read a byte from a Maps array.
-; @param A: index
-; @param HL: base address
-; @ret HL: word
-; @mut: AF, HL
-_Maps_index_byte:
-	call Maps_clamp_index
-	add l
-	ld l, a
-	adc h
-	sub l
-	ld h, a
-
-	ld a, [hl]
-	ret
-
-
-; Read a word from a Maps array
-; @param A: index
-; @param HL: base address
-; @ret HL: word
-; @mut: AF, HL
-_Maps_index_word:
-	call Maps_clamp_index
-	add a ; double index ==> indexing words
-	add l
-	ld l, a
-	adc h
-	sub l
-	ld h, a
-
-	ld a, [hl+]
-	ld h, [hl]
-	ld l, a
-	ret
-
-
-; @param A: map index
-; @ret A: clamped map index
-; @mut: AF
-Courses_clamp_index::
-	cp COURSE_COUNT
-	ret c
-	ld a, COURSE_COUNT - 1
-	ret
-
-
+; Look up a course's mapid by index.
 ; @param A: index
 ; @ret A: course mapid
 ; @mut: AF, HL
 Courses_index_mapid::
+	CheckIndex COURSE_COUNT
 	ld hl, Courses.course_mapid
-	jr _Courses_index_byte
+	jr _index_byte
 
 
+; Look up a course's info struct by index.
 ; @param A: index
 ; @ret A: course par score
 ; @ret HL: address of course info
 ; @mut: AF, HL
 Courses_index_info::
+	CheckIndex COURSE_COUNT
 	ld hl, Courses.course_info
-	jr _Courses_index_byte
+	jr _index_byte
 
 
+; Look up a course's title by course index.
 ; @param A: index
-; @ret HL: address of map title structure for map with given index
+; @ret HL: address of course title structure
 ; @mut: AF, HL
 Courses_index_title::
+	CheckIndex COURSE_COUNT
 	ld hl, Courses.course_title
-	jr _Courses_index_word
+	jr _index_word
 
 
-; Read a byte from a Maps array.
+; Read a byte from an array.
 ; @param A: index
-; @param HL: base address
-; @ret HL: word
+; @param HL: array address
+; @ret HL: address of byte read
 ; @mut: AF, HL
-_Courses_index_byte:
-	call Courses_clamp_index
+_index_byte:
 	add l
 	ld l, a
 	adc h
@@ -224,13 +175,12 @@ _Courses_index_byte:
 	ret
 
 
-; Read a word from a Maps array
+; Read a word from an array
 ; @param A: index
-; @param HL: base address
+; @param HL: array address
 ; @ret HL: word
 ; @mut: AF, HL
-_Courses_index_word:
-	call Courses_clamp_index
+_index_word:
 	add a ; double index ==> indexing words
 	add l
 	ld l, a

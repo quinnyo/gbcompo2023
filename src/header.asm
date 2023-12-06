@@ -121,6 +121,7 @@ EntryPoint:
 	call gfx_load_default_font
 	call gfx_load_default_palettes
 	call Texto_init
+	call CourseScores_unpack
 	call settings_init
 	call world_init
 	call Mode_init

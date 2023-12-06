@@ -178,8 +178,18 @@ LevelSelect_refresh2:
 	ld de, txt_best
 	ld c, TXT_BEST_LEN
 	call mem_copy_short
+
+	ld a, [wSettings.level]
+	call Courses_index_score
+	ld hl, wHeading2 + TXT_PAR_LEN + TXT_BEST_LEN + 2
+	and a
+	jr nz, .print_score
 	PutChar "*"
 	PutChar "*"
+	jr :+
+.print_score
+	call digi_print_u8_99
+:
 
 	ld bc, wHeading2 + HEADING_WIDTH
 	ld d, " "

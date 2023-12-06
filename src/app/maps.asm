@@ -17,47 +17,101 @@ endm
 ; MapDef MAPID
 macro MapDef
 	assert fatal, _NARG == 1, "MapDef requires 1 argument."
-	pushs
-	include "res/map/\1.asm"
-	pops
-
 	MapDefRaw \#
 endm
 
-; Define a new course with a map, title and par score.
-; If map is not defined, `MapDef MAPID` will be invoked.
-; CourseDef MAPID, "TITLE", PAR
+
+; CourseDef UID
 macro CourseDef
-	assert fatal, _NARG == 3, "CourseDef requires 3 arguments."
+	assert !def(_COURSE)
+	assert _NARG == 1
+	def _COURSE equ COURSE_COUNT
+	def COURSE_{u:_COURSE}_UID equ \1
+	def COURSE_COUNT += 1
+endm
+
+macro CourseMap
 	if !def(MAPIDX_\1)
 		MapDef \1
 	endc
-
-	def _COURSE equ COURSE_COUNT
-
 	def COURSE_{u:_COURSE}_MAPID equ MAPIDX_\1
-	def COURSE_{u:_COURSE}_TITLE equs \2
-	def COURSE_{u:_COURSE}_TITLE_LEN equ charlen(\2)
-	def COURSE_{u:_COURSE}_PAR equ \3
+endm
 
-	def COURSE_COUNT += 1
+macro CourseAttr
+	def COURSE_{u:_COURSE}_\1 equ \2
+endm
+
+macro CourseStr
+	def COURSE_{u:_COURSE}_\1 equs \2
+endm
+
+macro CourseEnd
 	purge _COURSE
 endm
 
 
 if def(DEVMODE)
-	CourseDef testmap, "Testmap?!", 3
+	CourseDef $01
+		CourseStr TITLE, "Testmap?!"
+		CourseMap testmap
+		CourseAttr PAR, 3
+	CourseEnd
 endc
 
-	CourseDef e1m1, "Emerge'n'see", 4
-	CourseDef e1m2, "Lookout!", 2
-	CourseDef e1m3, "Jangle Gap", 2
+	CourseDef $11
+		CourseStr TITLE, "Emerge'n'see"
+		CourseMap e1m1
+		CourseAttr PAR, 4
+	CourseEnd
 
-	CourseDef e2m1, "Beach", 5
-	CourseDef e2m2, "Ship battle", 6
+	CourseDef $12
+		CourseStr TITLE, "Lookout!"
+		CourseMap e1m2
+		CourseAttr PAR, 2
+	CourseEnd
+
+	CourseDef $13
+		CourseStr TITLE, "Jangle Gap"
+		CourseMap e1m3
+		CourseAttr PAR, 2
+	CourseEnd
+
+	CourseDef $21
+		CourseStr TITLE, "Beach"
+		CourseMap e2m1
+		CourseAttr PAR, 5
+	CourseEnd
+
+	CourseDef $22
+		CourseStr TITLE, "Ship battle"
+		CourseMap e2m2
+		CourseAttr PAR, 6
+	CourseEnd
 
 	MapDef win
 	MapDef bg_level_select
+
+for i, MAP_COUNT
+	pushs
+	include "res/map/{MAP_{u:i}}.asm"
+	pops
+endr
+
+
+section "wCourseScores", wram0
+
+; Unpacked Course save data
+wCourseScores:: ds COURSE_COUNT
+
+
+section "CourseScores", rom0
+
+CourseScores_unpack::
+	ld bc, sizeof("wCourseScores")
+	ld d, 0
+	ld hl, startof("wCourseScores")
+	call mem_fill
+	ret
 
 
 section "Maps", rom0
@@ -75,6 +129,11 @@ endr
 
 
 Courses::
+	.course_uid::
+for i, {COURSE_COUNT}
+	db COURSE_{u:i}_UID
+endr
+
 	.course_mapid:
 for i, {COURSE_COUNT}
 	db COURSE_{u:i}_MAPID
@@ -92,7 +151,7 @@ endr
 
 for i, {COURSE_COUNT}
 	.course{u:i}_title_data:
-	db COURSE_{u:i}_TITLE_LEN
+	db charlen("{COURSE_{u:i}_TITLE}")
 	db "{COURSE_{u:i}_TITLE}"
 endr
 
@@ -128,6 +187,37 @@ Maps_data_access::
 	jr _index_word
 
 
+; Find the storage index of the course with the given uid.
+; @param A: UID
+; @ret C: Index
+; @mut: C, HL
+Courses_uid_to_index::
+	ld hl, Courses.course_uid + COURSE_COUNT - 1
+	ld c, COURSE_COUNT
+:
+	cp [hl]
+	jr z, .found
+	dec hl
+	dec c
+	jr nz, :-
+.not_found
+	ld b, b
+	jr .not_found
+.found
+	dec c
+	ret
+
+
+; Look up a course's uid by index.
+; @param A: index
+; @ret A: course uid
+; @mut: AF, HL
+Courses_index_uid::
+	CheckIndex COURSE_COUNT
+	ld hl, Courses.course_uid
+	jr _index_byte
+
+
 ; Look up a course's mapid by index.
 ; @param A: index
 ; @ret A: course mapid
@@ -157,6 +247,17 @@ Courses_index_title::
 	CheckIndex COURSE_COUNT
 	ld hl, Courses.course_title
 	jr _index_word
+
+
+; Look up a course's score by index.
+; @param A: index
+; @ret A: score
+; @ret HL: address of course score structure
+; @mut: AF, HL
+Courses_index_score::
+	CheckIndex COURSE_COUNT
+	ld hl, wCourseScores
+	jr _index_byte
 
 
 ; Read a byte from an array.

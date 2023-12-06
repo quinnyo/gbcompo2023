@@ -156,6 +156,20 @@ _Game_update:
 _Game_update_stage_cleared:
 	bit PADB_A, b
 	ret z ; wait till A pressed
+
+	; save score
+	ld a, [wShot_count]
+	ld b, a
+	ld a, [wSettings.level]
+	call Courses_index_score
+	and a
+	jr z, .save_score ; if old score is zero, always save new score.
+	cp b
+	jr c, .no_save_score ; save best score
+.save_score
+	ld [hl], b
+.no_save_score
+
 	ld a, [wSettings.level]
 	inc a
 	ld [wSettings.level], a

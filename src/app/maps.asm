@@ -50,13 +50,13 @@ macro CourseEnd
 endm
 
 
-if def(DEVMODE)
-	CourseDef $01
-		CourseStr TITLE, "Testmap?!"
-		CourseMap testmap
-		CourseAttr PAR, 3
-	CourseEnd
-endc
+; if def(DEVMODE)
+; 	CourseDef $01
+; 		CourseStr TITLE, "Testmap?!"
+; 		CourseMap testmap
+; 		CourseAttr PAR, 3
+; 	CourseEnd
+; endc
 
 	CourseDef $11
 		CourseStr TITLE, "Emerge'n'see"
@@ -101,16 +101,73 @@ endr
 section "wCourseScores", wram0
 
 ; Unpacked Course save data
-wCourseScores:: ds COURSE_COUNT
+def COURSE_SAVE_DATA_LEN equ COURSE_COUNT
+wCourseScores:: ds COURSE_SAVE_DATA_LEN
 
 
 section "CourseScores", rom0
-
-CourseScores_unpack::
-	ld bc, sizeof("wCourseScores")
+CourseScores_init::
+	ld hl, wCourseScores
+	ld bc, COURSE_SAVE_DATA_LEN
 	ld d, 0
-	ld hl, startof("wCourseScores")
 	call mem_fill
+	ret
+
+
+; Write packed course save data to buffer.
+; @param DE: destination address
+; @mut: AF, BC, DE, HL
+CourseScores_pack::
+	ld a, COURSE_COUNT
+	ld c, a
+	ld [de], a
+	inc de
+	ld b, 0
+:
+	ld a, b
+	call Courses_index_uid
+	ld [de], a
+	inc de
+	ld a, b
+	call Courses_index_score
+	ld [de], a
+	inc de
+	inc b
+	dec c
+	jr nz, :-
+
+	ret
+
+
+; Unpack course scores save data block
+; @param DE: block data address
+CourseScores_unpack::
+	; { N, { UID, SCORE }[N] }
+	ld a, [de]
+	inc de
+	ld b, a
+:
+	call _unpack_one
+	dec b
+	jr nz, :-
+
+	ret
+
+
+_unpack_one:
+	ld a, [de]
+	inc de
+	call Courses_uid_to_index
+	jr nz, :+
+	inc de
+	ret
+:
+	ld a, c
+	call Courses_index_score
+	ld a, [de]
+	inc de
+	ld [hl], a
+
 	ret
 
 
@@ -190,6 +247,7 @@ Maps_data_access::
 ; Find the storage index of the course with the given uid.
 ; @param A: UID
 ; @ret C: Index
+; @ret F.Z: set if UID not found
 ; @mut: C, HL
 Courses_uid_to_index::
 	ld hl, Courses.course_uid + COURSE_COUNT - 1
@@ -201,10 +259,11 @@ Courses_uid_to_index::
 	dec c
 	jr nz, :-
 .not_found
-	ld b, b
-	jr .not_found
+	ld c, $FF
+	ret
 .found
 	dec c
+	or 1 ; reset F.Z
 	ret
 
 

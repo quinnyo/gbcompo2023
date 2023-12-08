@@ -121,8 +121,10 @@ EntryPoint:
 	call gfx_load_default_font
 	call gfx_load_default_palettes
 	call Texto_init
-	call CourseScores_unpack
 	call settings_init
+	call CourseScores_init
+	call Save_init
+	call savewhip_fetch
 	call world_init
 	call Mode_init
 
@@ -170,6 +172,7 @@ Main_mode_change::
 	ld [wMode.current], a
 	ld a, 1
 	call gfx_fade_out
+	call savewhip_store
 	call gfx_fade_complete
 
 	di

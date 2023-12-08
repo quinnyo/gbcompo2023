@@ -5,6 +5,9 @@ include "hardware.inc"
 ; @param hl: destination
 ; @param bc: length
 mem_copy::
+	ld a, c
+	or b
+	ret z
 :
 	ld a, [de]
 	ld [hl+], a
@@ -21,6 +24,9 @@ mem_copy::
 ; @param hl: destination
 ; @param c: length
 mem_copy_short::
+	ld a, c
+	and a
+	ret z
 :
 	ld a, [de]
 	ld [hl+], a
@@ -37,6 +43,9 @@ mem_copy_short::
 ; @param hl: destination
 ; @param bc: length (of the source block)
 mem_copy_double::
+	ld a, c
+	or b
+	ret z
 :
 	ld a, [de]
 	ld [hl+], a
@@ -50,11 +59,13 @@ mem_copy_double::
 
 
 ; Fill every byte in a block with a single value.
-; @warning: If block size is zero, bad things will happen.
 ; @param  D: value to write to the block
 ; @param HL: destination start
 ; @param BC: size of block in bytes
 mem_fill::
+	ld a, c
+	or b
+	ret z
 :
 	ld a, d
 	ld [hl+], a
@@ -103,6 +114,9 @@ mem_fill_to::
 ; @param hl: destination
 ; @param bc: length
 vmem_copy::
+	ld a, c
+	or b
+	ret z
 :
 	ldh a, [rSTAT]
 	and STATF_BUSY
@@ -121,6 +135,9 @@ vmem_copy::
 ; @param hl: destination
 ; @param c: length
 vmem_copy_short::
+	ld a, c
+	and a
+	ret z
 :
 	ldh a, [rSTAT]
 	and STATF_BUSY
@@ -138,6 +155,9 @@ vmem_copy_short::
 ; @param hl: destination
 ; @param bc: length (of the source block)
 vmem_copy_double::
+	ld a, c
+	or b
+	ret z
 :
 	ldh a, [rSTAT]
 	and STATF_BUSY
@@ -159,6 +179,9 @@ vmem_copy_double::
 ; @param HL: destination start
 ; @param BC: size of block in bytes
 vmem_fill::
+	ld a, c
+	or b
+	ret z
 :
 	ldh a, [rSTAT]
 	and STATF_BUSY
@@ -178,6 +201,9 @@ vmem_fill::
 ; @param HL: destination start
 ; @param  C: size of block in bytes
 vmem_fill_byte::
+	ld a, c
+	and a
+	ret z
 :
 	ldh a, [rSTAT]
 	and STATF_BUSY

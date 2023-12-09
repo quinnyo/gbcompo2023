@@ -91,10 +91,12 @@ things_init_next::
 
 things_start::
 things_info_update::
-	ld hl, wThings
 	ld a, [wThingsInfo.count]
+	and a
+	ret z
 	ld e, a
 	ld d, 0 ; targets
+	ld hl, wThings
 .loop_things
 	bit bThingStatus_TARGET, [hl]
 	jr z, .continue

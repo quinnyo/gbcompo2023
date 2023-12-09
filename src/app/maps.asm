@@ -223,6 +223,8 @@ endm
 
 if def(DEBUG)
 _error_index_out_of_range:
+	di
+	ld b, b
 	halt
 	nop
 	jr _error_index_out_of_range
@@ -308,15 +310,32 @@ Courses_index_title::
 	jr _index_word
 
 
-; Look up a course's score by index.
+; Look up a course's score by index, and check if it has been completed.
 ; @param A: index
 ; @ret A: score
+; @ret F.Z: set if level is incomplete.
 ; @ret HL: address of course score structure
 ; @mut: AF, HL
 Courses_index_score::
 	CheckIndex COURSE_COUNT
 	ld hl, wCourseScores
-	jr _index_byte
+	call _index_byte
+	and a
+	ret
+
+
+; Look up a course by index, and check if it's locked (unable to be played).
+; @param A: index
+; @ret F.Z: set if level is locked.
+; @mut: AF, HL
+Courses_index_locked::
+	and a
+	jr nz, :+
+	or 1 ; F.NZ
+	ret
+:
+	dec a
+	jr Courses_index_score
 
 
 ; Read a byte from an array.

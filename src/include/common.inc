@@ -10,10 +10,8 @@ include "hardware.inc"
 *                                                   THINGS *
 ***********************************************************/
 
-if def(MKMBC) && strcmp("{MKMBC}", "0x00") != 0
+if !def(NOMBC) && !def(MBC)
 	def MBC equ 1
-else
-	def NOMBC equ 1
 endc
 
 if def(DEVMODE)

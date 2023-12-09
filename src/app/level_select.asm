@@ -52,6 +52,13 @@ LevelSelect.init::
 	call world_load_map
 	call world_display_tilemap
 
+	ld a, [wSettings.level]
+	cp COURSE_COUNT
+	jr c, :+
+	ld a, COURSE_COUNT - 1
+	ld [wSettings.level], a
+:
+
 	call Texto_init
 	call LevelSelect_refresh0
 	call LevelSelect_refresh1
@@ -67,8 +74,12 @@ LevelSelect.init::
 LevelSelect.main_iter::
 	ld a, [wInput.pressed]
 	ld b, a
+
 	and PADF_A | PADF_START
-	jr z, :+
+	jr z, :+ ; if OK pressed
+	ld a, [wSettings.level]
+	call Courses_index_locked
+	jr z, :+ ; if level unlocked
 	ld a, ModeGame
 	jp Main_mode_change
 :
@@ -79,27 +90,13 @@ LevelSelect.main_iter::
 	jp Main_mode_change
 :
 
-	; L/R change level -/+
-	ld a, [wInput.pressed]
-	ld b, a
 	ld a, [wSettings.level]
 	ld d, a
-	cp COURSE_COUNT - 1
-	jr nc, :+
-	bit PADB_RIGHT, b
-	jr z, :+
-	inc a
-	jr :++
-:
-	cp 0
-	jr z, :+
-	bit PADB_LEFT, b
-	jr z, :+
-	dec a
-:
-
+	call _input_try_change_level
+	ld a, [wSettings.level]
 	cp d ; check index changed
 	jr z, :+
+	ld a, d
 	ld [wSettings.level], a
 	ld hl, snd_ui_move
 	call sound_play
@@ -109,6 +106,29 @@ LevelSelect.main_iter::
 	call LevelSelect_draw
 :
 
+	ret
+
+
+; @param B: input pressed
+; @param D: current level
+; @return D: new level
+; @mut: AF, D, HL
+_input_try_change_level:
+	bit PADB_RIGHT, b
+	jr z, :+
+	cp COURSE_COUNT - 1
+	ret nc
+	call Courses_index_score
+	ret z
+	inc d
+	ret
+:
+	bit PADB_LEFT, b
+	ret z
+	ld a, d
+	and a
+	ret z
+	dec d
 	ret
 
 
@@ -129,7 +149,18 @@ LevelSelect_refresh0:
 	ld bc, wHeading0 + HEADING_WIDTH - 1
 	ld d, " "
 	call mem_fill_to
-	PutChar "<^R>"
+
+	ld d, " "
+	ld a, [wSettings.level]
+	cp COURSE_COUNT - 1
+	jr nc, :+
+	call Courses_index_score
+	ld d, "<^R>"
+	jr nz, :+
+	ld d, "!"
+:
+	ld a, d
+	ld [bc], a
 
 	ret
 

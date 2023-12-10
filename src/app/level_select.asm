@@ -80,7 +80,8 @@ LevelSelect.main_iter::
 	ld a, [wSettings.level]
 	call Courses_index_locked
 	jr z, :+ ; if level unlocked
-	ld a, ModeGame
+	ld a, [wSettings.level]
+	call _get_level_mode
 	jp Main_mode_change
 :
 
@@ -129,6 +130,21 @@ _input_try_change_level:
 	and a
 	ret z
 	dec d
+	ret
+
+
+; Get the correct mode to switch to for a given level.
+; @param A: level index
+; @return A: mode id
+; @mut: AF, HL
+_get_level_mode:
+	call Courses_index_uid
+	and a
+	jr nz, :+
+	ld a, ModeEnding
+	ret
+:
+	ld a, ModeGame
 	ret
 
 

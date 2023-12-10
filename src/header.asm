@@ -179,6 +179,8 @@ Main_mode_change::
 	xor a
 	ldh [rIF], a
 
+	ld a, 144
+	ldh [rWY], a
 	call oam_clear
 	call Mode_init
 
@@ -215,6 +217,7 @@ section "Mode", rom0
 	ModeDef "Game", Game.init, Game.main_iter
 	ModeDef "LevelSelect", LevelSelect.init, LevelSelect.main_iter
 	ModeDef "SoundTest", SoundTest_init, SoundTest_main_iter
+	ModeDef "Ending", Ending_init, Ending_main_iter
 
 if def(DEBUG_MODES)
 	ModeDef "Debug_BallDrop", Debug_BallDrop.init, Debug_BallDrop.main_iter

@@ -4,6 +4,8 @@ def MAP_COUNT = 0 ; number of maps defined
 def COURSE_COUNT = 0
 export MAP_COUNT, COURSE_COUNT
 
+def UNITITLED_COURSE_TITLE equs "untitled"
+
 ; MapDefRaw MAPID
 macro MapDefRaw
 	assert fatal, _NARG == 1, "MapDefRaw requires 1 argument."
@@ -46,6 +48,7 @@ macro CourseStr
 endm
 
 macro CourseEnd
+	assert def(_COURSE), "CourseEnd invoked before CourseDef"
 	purge _COURSE
 endm
 
@@ -88,7 +91,11 @@ endm
 		CourseAttr PAR, 6
 	CourseEnd
 
-	MapDef win
+	CourseDef $00
+		CourseMap win
+		CourseStr TITLE, "The end"
+	CourseEnd
+
 	MapDef bg_level_select
 
 for i, MAP_COUNT
@@ -193,24 +200,39 @@ endr
 
 	.course_mapid:
 for i, {COURSE_COUNT}
+	assert def(COURSE_{u:i}_MAPID)
 	db COURSE_{u:i}_MAPID
 endr
 
 	.course_info:
 for i, {COURSE_COUNT}
-	db COURSE_{u:i}_PAR
+	if def(COURSE_{u:i}_PAR)
+		db COURSE_{u:i}_PAR
+	else
+		db 0
+	endc
 endr
 
 	.course_title:
 for i, {COURSE_COUNT}
-	dw .course{u:i}_title_data
+	if def(COURSE_{u:i}_TITLE)
+		dw .course{u:i}_title_data
+	else
+		dw .untitled_title_data
+	endc
 endr
 
 for i, {COURSE_COUNT}
-	.course{u:i}_title_data:
-	db charlen("{COURSE_{u:i}_TITLE}")
-	db "{COURSE_{u:i}_TITLE}"
+	if def(COURSE_{u:i}_TITLE)
+		.course{u:i}_title_data:
+		db charlen("{COURSE_{u:i}_TITLE}")
+		db "{COURSE_{u:i}_TITLE}"
+	endc
 endr
+
+	.untitled_title_data:
+	db charlen("{UNITITLED_COURSE_TITLE}")
+	db "{UNITITLED_COURSE_TITLE}"
 
 
 ; CheckIndex SIZE

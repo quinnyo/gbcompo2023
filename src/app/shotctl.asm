@@ -4,6 +4,7 @@ include "app/shotctl.inc"
 def MAX_SHOTS equ 99
 
 section "wShot", wram0
+wShot_max_shots:: db
 
 wShot_phase:: db
 wShot_phase_status:: db
@@ -20,17 +21,7 @@ wShotCfg_vy:: dw
 section "shotctl", rom0
 
 shotctl_init::
-	ld hl, wShot_phase
-	xor a
-	ld [hl+], a ; wShot_phase
-	ld [hl+], a ; wShot_phase_status
-	ld [hl+], a ; wShot_count
-	ld [hl+], a ; wShot_event_callback.0
-	ld [hl+], a ; wShot_event_callback.1
-	ld [hl+], a ; wShotCfg_vx.0
-	ld [hl+], a ; wShotCfg_vx.1
-	ld [hl+], a ; wShotCfg_vy.0
-	ld [hl+], a ; wShotCfg_vy.1
+	ZeroSection "wShot"
 
 for I, ShotPhase__COUNT
 	call shot_phase_{ShotPhase__KEY{u:I}}_init
@@ -39,20 +30,32 @@ endr
 	ret
 
 
+; Start next shot, if we haven't reached shot limit.
+; @return F.C: set on success
+; @mut: AF, B(C), (DE), HL
 shotctl_start_next_shot::
+	ld b, MAX_SHOTS
+	ld hl, wShot_max_shots
+	ld a, [hl]
+	and a
+	jr z, :+
+	ld b, a
+:
+	ld hl, wShot_count
+	ld a, [hl]
+	cp b
+	ld b, ShotEvent_SHOT_LIMIT
+	jr nc, _shotctl_event
+	inc [hl]
 	xor a
 	call shotctl_phase_change
-
-	ld hl, wShot_count
-	ld a, MAX_SHOTS - 1
-	cp [hl]
-	jr c, :+
-	inc [hl]
-:
-
+	ld b, ShotEvent_START_SHOT
+	call _shotctl_event
+	scf
 	ret
 
 
+; @mut: AF, B(C), (DE), HL
 shotctl_update::
 	ld a, [wShot_phase_status]
 	ld b, a
@@ -72,6 +75,7 @@ shotctl_update::
 
 ; @param A: phase
 ; @param B: phase status
+; @mut: AF, (BC), (DE), HL
 _phase_update:
 	cp ShotPhase__COUNT
 	jr nc, _error_bad_phase
@@ -85,7 +89,7 @@ _error_bad_phase:
 	rst panic
 
 
-; @mut: AF
+; @mut: AF, B(C), (DE), HL
 shotctl_phase_next::
 	ld a, [wShot_phase]
 	inc a
@@ -94,7 +98,7 @@ shotctl_phase_next::
 	jr shotctl_phase_change
 
 
-; @mut: AF
+; @mut: AF, B(C), (DE), HL
 shotctl_phase_back::
 	ld a, [wShot_phase]
 	and a
@@ -104,17 +108,18 @@ shotctl_phase_back::
 
 
 ; @param A: phase
-; @mut: AF, HL
+; @mut: AF, B(C), (DE), HL
 shotctl_phase_change::
 	ld [wShot_phase], a
 	ld a, ShotPhaseStatus_ENTER
 	ld [wShot_phase_status], a
-
+	ld b, ShotEvent_PHASE_CHANGE
 	jr _shotctl_event
 
 
 ; Call the event callback if callback != 0
-; @mut: AF, HL
+; @param B: event code (ShotEvent enum)
+; @mut: AF, (BC), (DE), HL
 _shotctl_event:
 	ld hl, wShot_event_callback
 	ld a, [hl+]

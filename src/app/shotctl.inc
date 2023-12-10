@@ -47,4 +47,13 @@ def ShotPhaseStatus_NEXT     rb 1 ; (PHASE ==> CTL) Phase completed successfully
 def ShotPhaseStatus_BACK     rb 1 ; (PHASE ==> CTL) Phase ended unsuccessfully -- move to previous phase.
 
 
+rsreset
+; Changing shot phase. Emitted after setting phase, before calling phase ENTER.
+def ShotEvent_PHASE_CHANGE  rb 1
+; Emitted when starting next shot. Will trigger after PHASE_CHANGE event.
+def ShotEvent_START_SHOT    rb 1
+; Emitted when starting next shot failed due to reaching shot limit.
+def ShotEvent_SHOT_LIMIT    rb 1
+
+
 endc ; APP_SHOTCTL_INC

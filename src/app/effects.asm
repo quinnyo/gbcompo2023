@@ -3,21 +3,77 @@ include "gfxmap.inc"
 include "core/sprite.inc"
 
 
+section "wEffects", wram0
+wEffect:
+	.timer: db
+	.x: db
+	.y: db
+	.sprite: dw
+
+
 section "effects manager", rom0
-
-sprite_BallStopped:
-	SpritePart tBall_C0_cy - 3, tBall_C0_cx + 3, tBall_C0, OAMF_PRI
-	SpritePart tBall_C1_cy - 5, tBall_C1_cx - 2, tBall_C1, OAMF_PRI
-	SpritePart tBall_C2_cy - 2, tBall_C2_cx + 1, tBall_C2, OAMF_PRI
-	SpritePart tBall_C3_cy - 4, tBall_C3_cx - 1, tBall_C3, OAMF_PRI
-	db SPRITE_PARTS_END
+Effects_init::
+	ZeroSection "wEffects"
+	ret
 
 
-; Draw 'stopped' ball sprite at given position
+Effects_update::
+	ldh a, [hTick]
+	and 7
+	jr nz, :+
+	ld hl, wEffect
+	call Effects_update_flicker_out
+:
+	ld hl, wEffect
+	call Effects_draw_flicker_out
+	ret
+
+
 ; @param B,C: X,Y position
-Effects_draw_ball_stopped::
+; @param DE: sprite parts
+Effects_spawn_flicker_out::
+	; TODO: get next available effect instance?
+	ld hl, wEffect
+	ld a, 8
+	ld [hl+], a
+	ld a, b
+	ld [hl+], a
+	ld a, c
+	ld [hl+], a
+	ld a, e
+	ld [hl+], a
+	ld a, d
+	ld [hl+], a
+	ret
+
+
+; @param HL: effect instance
+Effects_update_flicker_out:
+	ld a, [hl] ; timer
+	and a
+	ret z
+	dec a
+	ld [hl+], a
+	ret
+
+
+; @param HL: effect instance
+Effects_draw_flicker_out:
+	ld a, [hl+] ; timer
+	and a
+	ret z
+	ldh a, [hTick]
+	and 2
+	ret z
+	ld a, [hl+] ; x
+	ld b, a
+	ld a, [hl+] ; y
+	ld c, a
+	ld a, [hl+] ; sprite.0
+	ld e, a
+	ld a, [hl+] ; sprite.1
+	ld d, a
 	call oam_next_recall
-	ld de, sprite_BallStopped
 	call sprite_draw_parts
 	call oam_next_store
 	ret

@@ -31,7 +31,6 @@ _shot_done_update:
 	ld a, ShotPhaseStatus_NEXT
 	ld [wShot_phase_status], a
 :
-
 	ret
 
 
@@ -40,9 +39,15 @@ _shot_done_enter:
 	ld a, [hl+]
 	ld [hl+], a ; timer
 
-	call Ball_reset
+	call Ball_get_screen_position
+	ld hl, wBallSprite.sprite
+	ld a, [hl+]
+	ld e, a
+	ld a, [hl+]
+	ld d, a
+	call Effects_spawn_flicker_out
 
+	call Ball_reset
 	ld a, ShotPhaseStatus_OK
 	ld [wShot_phase_status], a
-
 	ret

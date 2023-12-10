@@ -42,6 +42,7 @@ Game::
 	call gfx_load_game_obj
 	call gfx_load_bg_tiles
 	call stats_init
+	call Effects_init
 	call Collide_init
 	call things_init
 	call tcm_init
@@ -138,17 +139,7 @@ _Game_update:
 .things_done
 	call things_draw
 	call Ball_draw
-
-	ld a, [wLastBall_status]
-	and a
-	jr z, :+
-	ld a, [wLastBall_x]
-	ld b, a
-	ld a, [wLastBall_y]
-	ld c, a
-	call nz, Effects_draw_ball_stopped
-:
-
+	call Effects_update
 	ret
 
 

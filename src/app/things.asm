@@ -295,7 +295,7 @@ _draw_sprite:
 	ld e, a
 	ldh a, [hThingCache.drawable + 1]
 	ld d, a
-	call sprite_draw_parts
+	call Sprite_draw
 	pop bc
 	ret
 

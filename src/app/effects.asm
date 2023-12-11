@@ -74,6 +74,6 @@ Effects_draw_flicker_out:
 	ld a, [hl+] ; sprite.1
 	ld d, a
 	call oam_next_recall
-	call sprite_draw_parts
+	call Sprite_draw
 	call oam_next_store
 	ret

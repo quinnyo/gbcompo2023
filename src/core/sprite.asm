@@ -1,13 +1,23 @@
 include "core/sprite.inc"
 
-section "sprite impl", rom0
-
+section "Sprite", rom0
 ; Draw sprite parts repeatedly until reaching a `SPRITE_PARTS_END`.
-; @reg BC: Position (origin) of sprite
-; @reg DE(+4): Address of first sprite part
-; @reg HL(+4): Destination address -- four byte OAM entry will be written starting here.
-sprite_draw_parts::
+; @param B,C: X,Y position (sprite origin)
+; @param DE: Address of first sprite part
+; @param HL: Destination address -- OAM entries will be written starting here.
+Sprite_draw::
 :
+	call SpritePart_draw
+	jr nz, :-
+	ret
+
+
+; Draw a single sprite part.
+; @param B,C: X,Y position (sprite origin)
+; @param DE: Address of sprite part
+; @param HL: Destination address -- OAM entry will be written here.
+; @return F.Z: set if reached SPRITE_PARTS_END
+SpritePart_draw::
 	ld a, [de] ; Y
 	cp SPRITE_PARTS_END
 	ret z
@@ -24,6 +34,5 @@ sprite_draw_parts::
 	ld a, [de] ; ATTR
 	inc de
 	ld [hl+], a
-	jr :-
-
+	or 1
 	ret

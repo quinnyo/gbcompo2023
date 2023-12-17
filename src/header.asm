@@ -93,8 +93,9 @@ ISR_VBlank:
 * MAIN
 **********************************************************/
 section "Main", rom0
-Reset::
 EntryPoint:
+	ld [wBootA], a
+Reset::
 	di
 	xor a
 	ldh [hVBlankF], a
@@ -182,6 +183,8 @@ Main_mode_change::
 	ld a, 144
 	ldh [rWY], a
 	call oam_clear
+	ld d, 0
+	call gfx_bg_attr_fill
 	call Mode_init
 
 	ei
@@ -205,6 +208,10 @@ section "Main_State", hram
 hVBlankF:: db      ; VBlank completion flag
 hTick:: db         ; VBlank count
 hActiveROM:: db    ; Selected ROMX bank number
+
+
+section "wBoot", wram0
+wBootA:: db        ; Value of A register at startup
 
 
 /**********************************************************

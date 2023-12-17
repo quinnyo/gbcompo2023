@@ -5,10 +5,12 @@ include "app/shotctl.inc"
 def bStatusUpdate    equ 0 ; status needs update
 def bStatusClear     equ 5 ; stage cleared
 def bStatusPaused    equ 6 ; game paused
+def bStatusFailed    equ 7 ; game over
 
 def fStatusUpdate    equ 1 << bStatusUpdate
 def fStatusClear     equ 1 << bStatusClear
 def fStatusPaused    equ 1 << bStatusPaused
+def fStatusFailed    equ 1 << bStatusFailed
 
 
 section "GameImpl", rom0
@@ -63,11 +65,22 @@ Game::
 	call Ball_init
 
 	call shotctl_init
+	ld a, [wSettings.level]
+	call Courses_index_info
+	inc hl ; skip par score
+	ld a, [hl]
+	ld [wShot_max_shots], a
 	call shotctl_start_next_shot
 	ld hl, wShot_event_callback
-	ld a, low(_Game_on_shot_phase_changed)
+	ld a, low(_Game_on_shot_event)
 	ld [hl+], a
-	ld [hl], high(_Game_on_shot_phase_changed)
+	ld [hl], high(_Game_on_shot_event)
+
+	call BallPile_setup
+	call shotctl_get_shot_count
+	ld d, a
+	call BallPile_set
+	call BallPile_draw
 
 	call musctl_stop
 
@@ -76,7 +89,7 @@ Game::
 
 .main_iter::
 	call _Game_update
-
+	call BallPile_draw
 .do_status_update
 	; update status line
 	ld a, [wGame.status]
@@ -86,11 +99,36 @@ Game::
 	ret
 
 
+_Game_on_shot_event:
+	ld a, b
+	cp ShotEvent_PHASE_CHANGE
+	jr z, _Game_on_shot_phase_changed
+	cp ShotEvent_START_SHOT
+	jr z, _Game_on_start_next_shot
+	cp ShotEvent_SHOT_LIMIT
+	jr z, _Game_on_shot_limit
+	ret
+
+
 _Game_on_shot_phase_changed:
 	; show status line
 	call build_status_stats
 	call status_update
+	ret
 
+
+_Game_on_start_next_shot:
+	call shotctl_get_shot_count
+	ld d, a
+	call BallPile_set
+	ret
+
+
+_Game_on_shot_limit:
+	ld hl, wGame.status
+	bit bStatusClear, [hl]
+	ret nz
+	set bStatusFailed, [hl]
 	ret
 
 
@@ -102,6 +140,11 @@ _Game_update:
 	ld a, [wGame.status]
 	bit bStatusClear, a
 	jr nz, _Game_update_stage_cleared
+	bit bStatusFailed, a
+	jr z, :+
+	ld a, ModeLevelSelect
+	jp Main_mode_change
+:
 	bit bStatusPaused, a
 	jr nz, _Game_update_paused
 

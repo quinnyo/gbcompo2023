@@ -212,6 +212,7 @@ LevelSelect_refresh1:
 
 
 LevelSelect_refresh2:
+	; par score
 	ld hl, wHeading2
 	ld de, txt_par
 	ld c, TXT_PAR_LEN
@@ -219,9 +220,11 @@ LevelSelect_refresh2:
 
 	ld a, [wSettings.level]
 	call Courses_index_info
+	ld a, [hl]
 	ld hl, wHeading2 + TXT_PAR_LEN
 	call digi_print_u8_99
 
+	; player best score
 	ld de, txt_best
 	ld c, TXT_BEST_LEN
 	call mem_copy_short

@@ -379,6 +379,24 @@ gfx_load_default_palettes::
 	ret
 
 
+; Fill BG attribute map
+; @param D: attr value
+; @mut: AF, BC, HL
+gfx_bg_attr_fill::
+	ld a, [wBootA]
+	cp BOOTUP_A_CGB
+	ret nz
+
+	ld a, 1
+	ldh [rVBK], a
+	ld hl, $9800
+	ld bc, 32 * 32
+	call vmem_fill
+	xor a
+	ldh [rVBK], a
+	ret
+
+
 section "GfxData", rom0
 
 default_font:
@@ -392,6 +410,7 @@ default_font:
 	ShrimpIncbin "res/map/buildings.2bpp"
 	ShrimpIncbin "res/map/terrain.2bpp"
 	ShrimpIncbin "res/map/warships.2bpp"
+	ShrimpIncbin "res/ball_pile.2bpp"
 
 
 LoadoPrg_LoadGameObj:
@@ -418,7 +437,7 @@ LoadoPrg_LoadGameObj:
 
 
 def DEFAULT_OCP_COUNT equ 4
-def DEFAULT_BCP_COUNT equ 3
+def DEFAULT_BCP_COUNT equ 4
 
 ocp_start:
 cpal_grey:
@@ -445,6 +464,12 @@ cpal_bluen:
 	ColorW 19, 22, 24
 	ColorW 13, 14, 19
 	ColorW 6, 7, 9
+
+cpal_greybg:
+	ColorW 27, 28, 26
+	ColorW 18, 18, 18
+	ColorW 9, 9, 9
+	ColorW 2, 2, 2
 
 
 pushs

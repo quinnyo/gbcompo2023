@@ -4,8 +4,8 @@ include "core/sprite.inc"
 include "gfxmap.inc"
 
 
-def TeeBallStartX              equ -21 ; new ball start position X offset from tee
-def TeeBallStartY              equ  -4 ; new ball start position Y offset from tee
+def TeeBallStartX              equ  6 ; new ball start position X offset from tee
+def TeeBallStartY              equ  -1 ; new ball start position Y offset from tee
 def TeeDefaultFrameDuration    equ   1 ; Display frames per sequence frame
 def TeeNewBallDelay            equ  30 ; Initial frame duration for new ball sequence
 

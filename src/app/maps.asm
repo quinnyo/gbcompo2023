@@ -6,6 +6,8 @@ export MAP_COUNT, COURSE_COUNT
 
 def UNITITLED_COURSE_TITLE equs "untitled"
 
+def COURSE_INFO_SIZE equ 2 ; { PAR, TURNS }
+
 ; MapDefRaw MAPID
 macro MapDefRaw
 	assert fatal, _NARG == 1, "MapDefRaw requires 1 argument."
@@ -71,24 +73,28 @@ endm
 		CourseStr TITLE, "Lookout!"
 		CourseMap e1m2
 		CourseAttr PAR, 2
+		CourseAttr TURNS, 3
 	CourseEnd
 
 	CourseDef $13
 		CourseStr TITLE, "Jangle Gap"
 		CourseMap e1m3
 		CourseAttr PAR, 2
+		CourseAttr TURNS, 6
 	CourseEnd
 
 	CourseDef $21
 		CourseStr TITLE, "Beach"
 		CourseMap e2m1
 		CourseAttr PAR, 5
+		CourseAttr TURNS, 8
 	CourseEnd
 
 	CourseDef $22
 		CourseStr TITLE, "Ship battle"
 		CourseMap e2m2
 		CourseAttr PAR, 6
+		CourseAttr TURNS, 9
 	CourseEnd
 
 	CourseDef $00
@@ -211,6 +217,11 @@ for i, {COURSE_COUNT}
 	else
 		db 0
 	endc
+	if def(COURSE_{u:i}_TURNS)
+		db COURSE_{u:i}_TURNS
+	else
+		db 0
+	endc
 endr
 
 	.course_title:
@@ -313,13 +324,19 @@ Courses_index_mapid::
 
 ; Look up a course's info struct by index.
 ; @param A: index
-; @ret A: course par score
 ; @ret HL: address of course info
 ; @mut: AF, HL
 Courses_index_info::
 	CheckIndex COURSE_COUNT
 	ld hl, Courses.course_info
-	jr _index_byte
+	assert COURSE_INFO_SIZE == 2
+	add a ; double index for struct size of 2
+	add l
+	ld l, a
+	adc h
+	sub l
+	ld h, a
+	ret
 
 
 ; Look up a course's title by course index.

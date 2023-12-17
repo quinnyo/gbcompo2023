@@ -129,3 +129,20 @@ _shotctl_event:
 	or h
 	ret z
 	jp hl
+
+
+; Get number of shots remaining, after the current one (a.k.a. "spare balls")
+; @return A: shots remaining
+; @return F.Z: set on final shot
+; @return F.C: set if max shots used
+; @mut: AF, D
+shotctl_get_shot_count::
+	ld a, [wShot_count]
+	ld d, a
+	ld a, [wShot_max_shots]
+	and a
+	jr nz, :+
+	ld a, MAX_SHOTS
+:
+	sub d
+	ret

@@ -76,6 +76,12 @@ Game::
 	ld [hl+], a
 	ld [hl], high(_Game_on_shot_event)
 
+	call BallPile_setup
+	call shotctl_get_shot_count
+	ld d, a
+	call BallPile_set
+	call BallPile_draw
+
 	call musctl_stop
 
 	ret
@@ -83,7 +89,7 @@ Game::
 
 .main_iter::
 	call _Game_update
-
+	call BallPile_draw
 .do_status_update
 	; update status line
 	ld a, [wGame.status]
@@ -112,6 +118,9 @@ _Game_on_shot_phase_changed:
 
 
 _Game_on_start_next_shot:
+	call shotctl_get_shot_count
+	ld d, a
+	call BallPile_set
 	ret
 
 

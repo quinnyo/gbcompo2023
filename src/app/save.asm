@@ -4,38 +4,45 @@ include "common.inc"
 pushc
 setcharmap main
 
-def SAVE_DATA_FORMAT_VERSION equ 0
-def SAVE_DATA_MAX_SIZE equ $800
-def SAVE_DATA_IDENT equs "GigantGolfSave"
-def SAVE_DATA_IDENT_LEN equ charlen("{SAVE_DATA_IDENT}")
+def SAVE_FILE_FORMAT_VERSION equ 1
+def SAVE_FILE_SIZE equ $200
+def SAVE_FILE_IDENT equs "GigantGolfSave"
+def SAVE_FILE_IDENT_LEN equ charlen("{SAVE_FILE_IDENT}")
+
+	stdecl SaveHeader
+		stfield ident, SAVE_FILE_IDENT_LEN
+		stfield version
+		stfield data_size, w
+	stclose
+
 
 section "NewSave", rom0
-NewSaveIdent::    db "{SAVE_DATA_IDENT}"
-NewSaveVersion::  db SAVE_DATA_FORMAT_VERSION
+NewSaveIdent::    db "{SAVE_FILE_IDENT}"
+NewSaveVersion::  db SAVE_FILE_FORMAT_VERSION
 NewSaveDataSize:: dw 0
 
 popc
 
 section "wSave", wramx
-wSaveIdent::    ds SAVE_DATA_IDENT_LEN
-wSaveVersion::  db
-wSaveDataSize:: dw
-wSaveData::     ds SAVE_DATA_MAX_SIZE
+wSaveIdent:    ds SAVE_FILE_IDENT_LEN
+wSaveVersion:  db
+wSaveDataSize: dw
+wSaveData:     ds SAVE_FILE_SIZE - SaveHeader_sz - 1
+wSaveChecksum: db
 
 
 section "sSave", sram[$A000]
-sSaveIdent:    ds SAVE_DATA_IDENT_LEN
-sSaveVersion:  db
-sSaveDataSize: dw
-sSaveData:     ds SAVE_DATA_MAX_SIZE
+sSave0: ds SAVE_FILE_SIZE
 
 
 section "SaveManager", wram0
 wSaveBlockStart:: dw
 wSaveDataEnd:     dw
 
+
 section "Save", rom0
 Save_init::
+	ZeroSection "wSave"
 	ret
 
 
@@ -50,26 +57,43 @@ Save_fetch::
 	ld [rRAMB], a
 	ld a, CART_SRAM_ENABLE
 	ld [rRAMG], a
-	ld bc, sizeof("wSave")
+	ld bc, SAVE_FILE_SIZE
 	ld de, startof("sSave")
 	ld hl, startof("wSave")
 	call mem_copy
 	ld a, CART_SRAM_DISABLE
 	ld [rRAMG], a
+	call _Save_check
+	ret
 
+
+_Save_check:
 	; compare ident
 	ld de, wSaveIdent
 	ld hl, NewSaveIdent
-	ld c, SAVE_DATA_IDENT_LEN
+	ld c, SAVE_FILE_IDENT_LEN
 :
 	ld a, [de]
 	inc de
 	cp [hl]
-	jp nz, Save_clear
+	jp nz, _Save_clear
 	inc hl
 	dec c
 	jr nz, :-
 
+	; check version...
+	ld a, [wSaveVersion]
+	and a
+	jr z, :+
+	; version != 0, do checksum
+	ld d, 0
+	ld hl, startof("wSave")
+	ld bc, SAVE_FILE_SIZE - 1
+	call sum_range
+	ld a, [wSaveChecksum]
+	cp d
+	jp nz, _Save_clear
+:
 	ret
 
 
@@ -79,11 +103,14 @@ Save_fetch::
 Save_store::
 	ld a, bank("wSave")
 	ldh [rSVBK], a
+	ld a, SAVE_FILE_FORMAT_VERSION
+	ld [wSaveVersion], a
+	call _Save_update_checksum
 	ld a, bank("sSave")
 	ld [rRAMB], a
 	ld a, CART_SRAM_ENABLE
 	ld [rRAMG], a
-	ld bc, sizeof("wSave")
+	ld bc, SAVE_FILE_SIZE
 	ld de, startof("wSave")
 	ld hl, startof("sSave")
 	call mem_copy
@@ -94,19 +121,37 @@ Save_store::
 
 ; Reset save data
 ; @mut: AF, BC, DE, HL
-Save_clear::
+_Save_clear:
 	ld bc, sizeof("NewSave")
 	ld de, startof("NewSave")
 	ld hl, startof("wSave")
 	call mem_copy
+	ld d, $FF
+	ld bc, SAVE_FILE_SIZE - sizeof("NewSave")
+	call mem_fill
+	ret
+
+
+; Calculate and store wSave checksum.
+; @mut: AF, BC, D, HL
+_Save_update_checksum:
+	ld d, 0
+	ld hl, startof("wSave")
+	ld bc, SAVE_FILE_SIZE - 1
+	call sum_range
+	ld a, d
+	ld [wSaveChecksum], a
 	ret
 
 
 ; Start reading save data. Checks if there is data to read.
 ; NOTE: does not open the first data block.
+; NOTE: switches wram to bank containing wSave.
 ; @return DE: address of first block (do not access this if F.Z is set)
 ; @return F.Z: set if there is no data to read.
 Save_read_start::
+	ld a, bank("wSave")
+	ldh [rSVBK], a
 	call _get_data_end
 	ld hl, wSaveDataEnd
 	ld a, e
@@ -123,6 +168,7 @@ Save_read_start::
 
 ; Access a data block (and process the block header).
 ; IMPORTANT: Save_read_start must have been called prior.
+; NOTE: Assumes wSave bank is selected.
 ; @param DE: block address (start of block header)
 ; @return B: block type
 ; @return DE: block data start (address after block header)
@@ -162,6 +208,7 @@ Save_open_block::
 
 ; Prepare the save data buffer for (re)writing.
 ; Reset the save data buffer size and 'end' pointer.
+; NOTE: Assumes wSave bank is selected.
 ; @return DE: save data buffer 'end' pointer
 ; @mut: AF, DE
 Save_write_start::
@@ -175,6 +222,7 @@ Save_write_start::
 
 
 ; Prepare to write a data block.
+; NOTE: Assumes wSave bank is selected.
 ; @param B: block type/ID
 ; @return DE: block data address
 ; @mut: AF, DE
@@ -190,15 +238,23 @@ Save_block_start::
 	ret
 
 
+; Update the save data buffer 'end' pointer and wSaveDataSize.
+; NOTE: Assumes wSave bank is selected.
 ; @param DE: block end address (excl.)
 ; @mut: AF, DE
 Save_block_end::
 	; Update total save data size
-	call _set_data_end
+	ld a, e
+	sub low(wSaveData)
+	ld [wSaveDataSize + 0], a
+	ld a, d
+	sbc high(wSaveData)
+	ld [wSaveDataSize + 1], a
 	ret
 
 
 ; Get the save data buffer 'end' pointer.
+; NOTE: Assumes wSave bank is selected.
 ; @return DE: Pointer to end of save data (excl.)
 ; @mut: AF, DE
 _get_data_end:
@@ -211,14 +267,20 @@ _get_data_end:
 	ret
 
 
-; Update the save data buffer 'end' pointer and wSaveDataSize.
-; @param DE: Pointer to end of save data (excl.)
-; @mut: AF, DE
-_set_data_end:
-	ld a, e
-	sub low(wSaveData)
-	ld [wSaveDataSize + 0], a
+; @param D: sum
+; @param HL: input data address
+; @param BC: input data length
+; @return D: sum
+; @mut: AF, BC, D, HL
+sum_range:
+	ld a, b
+	or c
+	ret z
+
 	ld a, d
-	sbc high(wSaveData)
-	ld [wSaveDataSize + 1], a
-	ret
+	sub [hl]
+	dec a
+	ld d, a
+	inc hl
+	dec bc
+	jr sum_range

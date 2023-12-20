@@ -229,11 +229,11 @@ class Map:
         height_columns = self.columns * 8
         self.heightmap = [sample(x) for x in range(height_columns)]
 
-    def write_asm(self, bg_tile_offset: int = 128):
+    def write_asm(self, args):
         # Tileset index map
         gid_to_bg_index = {}
         for index, gid in enumerate(self.tileset_bg.used_gids):
-            gid_to_bg_index[gid] = index + bg_tile_offset
+            gid_to_bg_index[gid] = index + args.bg_tile_offset
         gid_to_obj_index = {}
         for index, gid in enumerate(self.tileset_obj.used_gids):
             gid_to_obj_index[gid] = index
@@ -260,7 +260,7 @@ class Map:
         if len(self.tilemap) > 0:
             asm_tile_lines = []
             for row in self.tilemap:
-                converted = [gid_to_bg_index[gid & MASK_GID] for gid in row]
+                converted = [gid_to_bg_index.get(gid & MASK_GID, args.bg_tile_default) for gid in row]
                 asm_row = ", ".join([f"${idx:02X}" for idx in converted])
                 asm_tile_lines.append("\t\tdb " + asm_row)
 
@@ -446,8 +446,6 @@ include "gfxmap.inc"
 section "map_%MAP_NAME%", romx
 
 map_%MAP_NAME%::
-;\tdb %CHUNK_COUNT%
-;\tdw %CHUNK_LIST%
 """
 
 MAP_FOOTER_TEMPLATE = """
@@ -455,28 +453,20 @@ map_%MAP_NAME%_end::
 """
 
 
-def process_map(infile: Path):
-    tmx = pytiled_parser.parse_map(infile)
-
-    logv(f"processing TMX '{tmx.map_file}'")
-
-    out = Map()
-    out.process_tmx(tmx)
-
-    return out
-
-
 def main():
     argp = ArgumentParser()
-    argp.add_argument("--bgoffset", type=int, default=128, help="BG tilemap CHR code offset. Defaults to 128.")
+    argp.add_argument("--bg_tile_offset", type=int, default=128, help="BG tilemap CHR code offset. Defaults to 128.")
+    argp.add_argument("--bg_tile_default", type=int, default=0, help="BG tilemap fallback CHR code. Used to fill empty cells in source map.")
     argp.add_argument("--out", "-o", type=Path, help="Map ASM output file")
     argp.add_argument("infile", type=Path, help="Input Tiled map (TMX) file")
 
     args = argp.parse_args()
     assert args.infile and args.infile.exists()
 
-    map_data = process_map(args.infile)
-    asm = map_data.write_asm(bg_tile_offset = args.bgoffset)
+    tmx = pytiled_parser.parse_map(args.infile)
+    map_data = Map()
+    map_data.process_tmx(tmx)
+    asm = map_data.write_asm(args)
 
     if args.out:
         tempf = args.out.with_suffix(".tempf")

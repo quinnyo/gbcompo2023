@@ -129,6 +129,8 @@ _Game_on_shot_limit:
 	bit bStatusClear, [hl]
 	ret nz
 	set bStatusFailed, [hl]
+	ld de, msgGameOver
+	call draw_msg_box
 	ret
 
 
@@ -141,10 +143,7 @@ _Game_update:
 	bit bStatusClear, a
 	jr nz, _Game_update_stage_cleared
 	bit bStatusFailed, a
-	jr z, :+
-	ld a, ModeLevelSelect
-	jp Main_mode_change
-:
+	jr nz, _Game_update_game_over
 	bit bStatusPaused, a
 	jr nz, _Game_update_paused
 
@@ -210,6 +209,14 @@ _Game_update_stage_cleared:
 	ld a, ModeLevelSelect
 	jp Main_mode_change
 	ret
+
+
+; @param B: input state (pressed)
+_Game_update_game_over:
+	bit PADB_A, b
+	ret z ; wait till A pressed
+	ld a, ModeLevelSelect
+	jp Main_mode_change
 
 
 ; @param B: input state (pressed)
@@ -487,6 +494,7 @@ macro MsgThing
 endm
 
 	MsgThing msgAllDestroyed, " Clear! "
+	MsgThing msgGameOver, " Game Over! "
 
 
 def MSG_MAX_WIDTH equ 18

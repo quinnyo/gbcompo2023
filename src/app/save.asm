@@ -8,6 +8,7 @@ def SAVE_FILE_FORMAT_VERSION equ 1
 def SAVE_FILE_SIZE equ $200
 def SAVE_FILE_IDENT equs "GigantGolfSave"
 def SAVE_FILE_IDENT_LEN equ charlen("{SAVE_FILE_IDENT}")
+def SAVE_FILE_REDUNDANT_COPIES equ 3
 
 	stdecl SaveHeader
 		stfield ident, SAVE_FILE_IDENT_LEN
@@ -32,7 +33,9 @@ wSaveChecksum: db
 
 
 section "sSave", sram[$A000]
-sSave0: ds SAVE_FILE_SIZE
+for I, SAVE_FILE_REDUNDANT_COPIES + 1
+	sSave0_{u:I}: ds SAVE_FILE_SIZE
+endr
 
 
 section "SaveManager", wram0
@@ -53,20 +56,31 @@ Save_init::
 Save_fetch::
 	ld a, bank("wSave")
 	ldh [rSVBK], a
+for I, SAVE_FILE_REDUNDANT_COPIES + 1
+	ld de, sSave0_{u:I}
+	call _Save_fetch
+	call _Save_check
+	ret z
+endr
+	; check failed
+	jp _Save_clear
+
+
+; @param DE: source
+_Save_fetch:
 	ld a, bank("sSave")
 	ld [rRAMB], a
 	ld a, CART_SRAM_ENABLE
 	ld [rRAMG], a
 	ld bc, SAVE_FILE_SIZE
-	ld de, startof("sSave")
 	ld hl, startof("wSave")
 	call mem_copy
 	ld a, CART_SRAM_DISABLE
 	ld [rRAMG], a
-	call _Save_check
 	ret
 
 
+; @return F.Z: set if cached save file looks valid
 _Save_check:
 	; compare ident
 	ld de, wSaveIdent
@@ -76,7 +90,7 @@ _Save_check:
 	ld a, [de]
 	inc de
 	cp [hl]
-	jp nz, _Save_clear
+	ret nz
 	inc hl
 	dec c
 	jr nz, :-
@@ -92,9 +106,9 @@ _Save_check:
 	call sum_range
 	ld a, [wSaveChecksum]
 	cp d
-	jp nz, _Save_clear
+	ret nz
 :
-	ret
+	ret ; F.Z
 
 
 ; Write cached save data to external storage.
@@ -106,14 +120,20 @@ Save_store::
 	ld a, SAVE_FILE_FORMAT_VERSION
 	ld [wSaveVersion], a
 	call _Save_update_checksum
+	call _Save_check
+	jr z, :+
+	rst panic
+:
 	ld a, bank("sSave")
 	ld [rRAMB], a
 	ld a, CART_SRAM_ENABLE
 	ld [rRAMG], a
+for I, SAVE_FILE_REDUNDANT_COPIES + 1
 	ld bc, SAVE_FILE_SIZE
 	ld de, startof("wSave")
-	ld hl, startof("sSave")
+	ld hl, sSave0_{u:I}
 	call mem_copy
+endr
 	ld a, CART_SRAM_DISABLE
 	ld [rRAMG], a
 	ret

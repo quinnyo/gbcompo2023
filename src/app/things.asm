@@ -118,6 +118,47 @@ things_info_update::
 	ret
 
 
+; Build up to date colliders from current Thing state.
+; @mut: AF, BC, DE, HL
+things_update_colliders::
+	ld a, [wThingsInfo.count]
+	and a
+	ret z
+	ld e, a
+	ld hl, wThings
+.loop_things
+	ld a, [hl]
+	bit bThingStatus_VOID, a
+	jr nz, .loop_things_continue
+	and fThingStatus_HITS
+	jr z, .loop_things_continue
+	push hl
+	inc hl
+	ld a, [hl+] ; collider
+	cp $FF
+	jr z, .no_collider
+	ld d, a
+	ld a, [hl+] ; pos.x
+	ld b, a
+	ld a, [hl+] ; pos.y
+	ld c, a
+	ld a, d
+	call Collide_set_box_position
+.no_collider
+	pop hl
+.loop_things_continue
+	ld a, Thing_sz
+	add l
+	ld l, a
+	adc h
+	sub l
+	ld h, a
+
+	dec e
+	jr nz, .loop_things
+	ret
+
+
 ; Main Thing per-tick process routine.
 ; @mut: AF, BC, DE, HL
 things_think::

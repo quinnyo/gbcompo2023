@@ -10,6 +10,9 @@ def CHRSRC_A0_2     equ 2
 def CHRSRC_A1_0     equ 3
 def CHRSRC_A1_1     equ 4
 def CHRSRC_A1_2     equ 5
+def CHRSRC_A2_0     equ 6
+def CHRSRC_A2_1     equ 7
+def CHRSRC_A2_2     equ 8
 def CHRSRC_B1_0_F1  equ 18 ; (2, 1)
 def CHRSRC_B1_1_F0  equ 19 ; (3, 1)
 def CHRSRC_B1_0_F0  equ 34 ; (2, 2)
@@ -22,6 +25,9 @@ def CHR_A0_2     rb 1
 def CHR_A1_0     rb 1
 def CHR_A1_1     rb 1
 def CHR_A1_2     rb 1
+def CHR_A2_0     rb 1
+def CHR_A2_1     rb 1
+def CHR_A2_2     rb 1
 def CHR_B1_0_F1  rb 1
 def CHR_B1_1_F0  rb 1
 def CHR_B1_0_F0  rb 1
@@ -40,6 +46,16 @@ sprite_B1_1:
 sprite_B1_2:
 	SpritePart 0, 0, CHR_B1_2_F0, 0
 	SpriteEnd
+
+
+thing_A0:
+	DefThingLegacy CHR_A0_0, 0
+
+thing_A1:
+	DefThingLegacy CHR_A1_0, 32
+
+thing_A2:
+	DefThingLegacy CHR_A2_0, 0
 
 thing_B1_0:
 	ThingcNew
@@ -114,7 +130,11 @@ map_testmap::
 	db LOADOCODE_SRC
 	dw res_map_buildings_2bpp
 	db LOADOCODE_SRC_CHR, CHRSRC_A0_0
-	db LOADOCODE_CHRCOPY, 6
+	db LOADOCODE_CHRCOPY, 3
+	db LOADOCODE_SRC_CHR, CHRSRC_A1_0
+	db LOADOCODE_CHRCOPY, 3
+	db LOADOCODE_SRC_CHR, CHRSRC_A2_0
+	db LOADOCODE_CHRCOPY, 3
 	db LOADOCODE_SRC_CHR, CHRSRC_B1_0_F1
 	db LOADOCODE_CHRCOPY, 2
 	db LOADOCODE_SRC_CHR, CHRSRC_B1_0_F0
@@ -161,47 +181,21 @@ map_testmap::
 		db 132, 132, 133, 133, 134, 134, 135, 135, 136, 136, 137, 138, 139, 139, 140, 141
 
 .chunk5:
-	dw .chunk6 ; next chunk
-	db MapChunk_Things
-	.things:
-		PlaceThingLegacy 61, 92, CHR_A1_0, 32
-		PlaceThingLegacy 96, 106, CHR_A1_0, 32
-		ThingcStop
-
-.chunk6:
 	dw .chunkEnd ; next chunk
 	db MapChunk_Things
-	.things2:
-	.c6t0:
-		ThingcNew
-		ThingcDrawOAM CHR_A0_0, 0
-		ThingcPosition 119, 112
-		ThingcCollideTile
-		ThingcDieGoto .c6t0_destroyed0
-		ThingcSave
-		ThingcGoto .c6t2
-	.c6t0_destroyed0:
-		ThingcDrawOAM CHR_A0_1, 0
-		ThingcHits 1
-		ThingcDieGoto .c6t0_destroyed1
-		ThingcSave
-		ThingcStop
-	.c6t0_destroyed1:
-		ThingcDrawOAM CHR_A0_2, 0
-		ThingcDieGoto 0
-		ThingcSave
-		ThingcStop
-
-	.c6t2:
-		ThingcInstance thing_B1_0
-		ThingcPosition 137, 116
-		ThingcCollideTile ; hack: reapply collider because we moved the thing
-		ThingcSave
-		ThingcGoto .c6things_end
-
-	.c6things_end:
-		ThingcStop
-
+	ThingcInstance thing_A0
+	ThingcPosition 119, 112
+	ThingcSave
+	ThingcInstance thing_A1
+	ThingcPosition 92, 61
+	ThingcSave
+	ThingcInstance thing_A2
+	ThingcPosition 106, 96
+	ThingcSave
+	ThingcInstance thing_B1_0
+	ThingcPosition 137, 116
+	ThingcSave
+	ThingcStop
 
 .chunkEnd:
 	dw 0 ; next chunk

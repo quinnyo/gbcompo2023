@@ -111,6 +111,10 @@ _Game_on_shot_event:
 
 
 _Game_on_shot_phase_changed:
+	ld a, [wShot_phase]
+	cp ShotPhase__SETUP
+	call z, things_update_colliders
+
 	; show status line
 	call build_status_stats
 	call status_update

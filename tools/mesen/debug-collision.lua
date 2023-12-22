@@ -214,7 +214,7 @@ function CollidersPrintInfo(colliders, cfg)
       collx, colly = coll.box.left * drawScale, coll.box.top * drawScale
       local collcol = colliderGetColor(coll)
       emu.drawLine(x, y, collx, colly, collcol)
-      emu.drawString(x, y - 8, i .. ":" .. coll.result, textColor, 0x66 | collcol)
+      emu.drawString(x, y - 8, (i - 1) .. ":" .. coll.result, textColor, 0x66 | collcol)
       popoutcount = popoutcount + 1
     end
   end

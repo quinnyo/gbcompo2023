@@ -109,6 +109,47 @@ Collide_set_box_max::
 	ret
 
 
+; @param B,C: new position X,Y (Left,Top)
+; @param A: index
+; @mut: AF, BC, HL
+Collide_set_box_position::
+	ld l, a
+	call Collide_get_box_at
+
+	; FALLTHROUGH
+
+; Set box position
+; @param B,C: new position X,Y (Left,Top)
+; @param HL: this
+; @mut: AF, BC, HL
+Box_set_position::
+	; dx = px - L
+	ld a, b
+	sub [hl]
+	ld b, a
+	; L' = L + dx
+	ld a, [hl]
+	add b
+	ld [hl+], a
+	; R' = R + dx
+	ld a, [hl]
+	add b
+	ld [hl+], a
+	; dy = py - T
+	ld a, c
+	sub [hl]
+	ld c, a
+	; T' = T + dy
+	ld a, [hl]
+	add c
+	ld [hl+], a
+	; B' = B + dy
+	ld a, [hl]
+	add c
+	ld [hl+], a
+	ret
+
+
 ; Set the subject collider as a 'missile'
 ; @param B,C: pX,pY missile centre
 ; @param E: missile radius

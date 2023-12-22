@@ -237,5 +237,28 @@ macro PlaceThingLegacy
 .\@_done:
 endm
 
+; DefThingLegacy CHR, OAM_ATTR
+macro DefThingLegacy
+	ThingcNew
+	ThingcDrawOAM (\1), (\2)
+	ThingcPosition 32, 32 ; HACK: CollideTile requires position to be set
+	ThingcCollideTile
+	ThingcHits 1
+	ThingcDieGoto .state1\@
+	ThingcSave
+	ThingcStop
+.state1\@:
+	ThingcDrawOAM (\1) + 1, (\2)
+	ThingcHits 1
+	ThingcDieGoto .state2\@
+	ThingcSave
+	ThingcStop
+.state2\@:
+	ThingcDrawOAM (\1) + 2, (\2)
+	ThingcDieGoto 0
+	ThingcSave
+	ThingcStop
+endm
+
 
 endc ; APP_THINGS_INC

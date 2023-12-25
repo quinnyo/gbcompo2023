@@ -60,19 +60,20 @@ thing_A2:
 thing_B1_0:
 	ThingcNew
 	ThingcDrawSprite sprite_B1_0
-	ThingcPosition 32, 32
-	ThingcCollideTile
+	ThingcCollideBox 2, 7, -3, 8
 	ThingcDieGoto thing_B1_F0_1
 	ThingcSave
 	ThingcStop
 thing_B1_F0_1:
 	ThingcDrawSprite sprite_B1_1
+	ThingcCollideTile
 	ThingcHits 1
 	ThingcDieGoto thing_B1_F0_2
 	ThingcSave
 	ThingcStop
 thing_B1_F0_2:
 	ThingcDrawSprite sprite_B1_2
+	ThingcCollideNone
 	ThingcDieGoto 0
 	ThingcSave
 	ThingcStop

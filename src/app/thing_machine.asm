@@ -162,7 +162,9 @@ tcm_step::
 	dw _tcx_New
 	dw _tcx_Save
 	dw _tcx_Stop
+	dw _tcx_CollideNone
 	dw _tcx_CollideTile
+	dw _tcx_CollideBox
 	; tc1
 	dw _tcx_Hits
 	; tc2
@@ -178,6 +180,16 @@ tcm_step::
 	ld b, b
 	halt
 	jr .err
+
+
+; @param HL: new program counter
+; @mut: A
+tcm_jump::
+	ld a, l
+	ld [wThingMachine.prg + 0], a
+	ld a, h
+	ld [wThingMachine.prg + 1], a
+	ret
 
 
 _tcx_New::
@@ -198,28 +210,59 @@ _tcx_Stop::
 	ret
 
 
-_tcx_CollideTile::
+_tcx_CollideNone::
+	ld a, [wThingCache.collider]
+	cp $FF
+	ret z
+	jp Collide_reset_box
+
+
+_get_or_add_box:
+	ld a, [wThingCache.collider]
+	cp $FF
+	jr z, :+
+	ld l, a
+	jp Collide_get_box_at
+:
 	call Collide_add_box
-	ld d, a           ; D = collider index...
-	ld a, [wThingCache.pos + 0]
-	ld [hl+], a       ; left
-	add 8
-	jr nc, :+
-	ld a, 255
-:
-	ld [hl+], a       ; right
-	ld a, [wThingCache.pos + 1]
-	ld [hl+], a       ; top
-	add 8
-	jr nc, :+
-	ld a, 255
-:
-	ld [hl+], a       ; bottom
-
-	ld hl, wThingCache.collider
-	ld [hl], d
-
+	ld [wThingCache.collider], a
 	ret
+
+
+_tcx_CollideTile::
+	call _get_or_add_box
+	xor a
+	ld [hl+], a       ; left
+	ld a, 8
+	ld [hl+], a       ; right
+	xor a
+	ld [hl+], a       ; top
+	ld a, 8
+	ld [hl+], a       ; bottom
+	ret
+
+
+_tcx_CollideBox::
+	; Create box and copy 4 bytes [left, right, top, bottom] to it.
+	call _get_or_add_box
+	ld e, l
+	ld d, h
+	ld hl, wThingMachine.prg
+	ld a, [hl+]
+	ld h, [hl]
+	ld l, a
+	ld a, [hl+] ; left
+	ld [de], a
+	inc de
+	ld a, [hl+] ; right
+	ld [de], a
+	inc de
+	ld a, [hl+] ; top
+	ld [de], a
+	inc de
+	ld a, [hl+] ; bottom
+	ld [de], a
+	jr tcm_jump
 
 
 ; @param D: new HITS value

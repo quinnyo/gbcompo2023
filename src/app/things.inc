@@ -113,7 +113,9 @@ def tc0               rb 0
 def tc_New            rb 1
 def tc_Save           rb 1
 def tc_Stop           rb 1
+def tc_CollideNone    rb 1
 def tc_CollideTile    rb 1
+def tc_CollideBox     rb 1
 def tc1               rb 0
 def tc_Hits           rb 1
 def tc2               rb 0
@@ -123,7 +125,6 @@ def tc_Position       rb 1
 def tc_DrawOAM        rb 1
 def tc_DrawSprite     rb 1
 def tc_DieGoto        rb 1
-; def tc_CollideBox     rb 1
 
 def tc__COUNT         rb 0 ; Number of instructions
 
@@ -175,9 +176,21 @@ macro ThingcHits
 endm
 
 
+macro ThingcCollideNone
+	assert fatal, _NARG == 0
+	db tc_CollideNone
+endm
+
+
 macro ThingcCollideTile
 	assert fatal, _NARG == 0
 	db tc_CollideTile
+endm
+
+
+macro ThingcCollideBox
+	assert fatal, _NARG == 4
+	db tc_CollideBox, \#
 endm
 
 
@@ -241,7 +254,6 @@ endm
 macro DefThingLegacy
 	ThingcNew
 	ThingcDrawOAM (\1), (\2)
-	ThingcPosition 32, 32 ; HACK: CollideTile requires position to be set
 	ThingcCollideTile
 	ThingcHits 1
 	ThingcDieGoto .state1\@

@@ -5,8 +5,7 @@
 include "core/collide.inc"
 
 section "wColliders", wram0, align[8]
-
-; Collider box storage
+; Cache of transformed collider box extents
 wColliders:: ds COLLIDERS_POOL_SIZE
 
 ; Stores collision test results for each collider
@@ -18,6 +17,9 @@ wCollideSubject:: ds ColliderBox_sz
 ; Number of colliders in wColliders
 wColliderCount:: db
 
+section "wColliderShapes", wram0, align[8]
+; Untransformed box extents
+wColliderShapes:: ds COLLIDERS_POOL_SIZE
 
 section "Colliders", rom0
 Collide_init::
@@ -33,6 +35,9 @@ Collide_clear::
 	ld a, $FF
 	ld c, COLLIDERS_POOL_SIZE
 	ld hl, wColliders
+	call mem_fill_byte
+	ld c, COLLIDERS_POOL_SIZE
+	ld hl, wColliderShapes
 	call mem_fill_byte
 	xor a
 	ld [wColliderCount], a
@@ -78,8 +83,21 @@ Collide_add_box::
 Collide_get_box_at::
 	sla l
 	sla l
-	ld h, high(wColliders)
+	ld h, high(wColliderShapes)
 	ret
+
+
+; @param A: index
+Collide_reset_box::
+	ld l, a
+	call Collide_get_box_at
+	ld b, a
+	ld a, $FF
+	ld c, ColliderBox_sz
+	call mem_fill_byte
+	ld a, b
+	ld bc, 0
+	jr Collide_set_box_position
 
 
 ; @param B,C: min X,Y
@@ -115,38 +133,24 @@ Collide_set_box_max::
 Collide_set_box_position::
 	ld l, a
 	call Collide_get_box_at
-
-	; FALLTHROUGH
-
-; Set box position
-; @param B,C: new position X,Y (Left,Top)
-; @param HL: this
-; @mut: AF, BC, HL
-Box_set_position::
-	; dx = px - L
-	ld a, b
-	sub [hl]
-	ld b, a
-	; L' = L + dx
-	ld a, [hl]
+	ld e, l
+	ld d, high(wColliders)
+	ld a, [hl+] ; left
 	add b
-	ld [hl+], a
-	; R' = R + dx
-	ld a, [hl]
+	ld [de], a
+	inc de
+	ld a, [hl+] ; right
 	add b
-	ld [hl+], a
-	; dy = py - T
-	ld a, c
-	sub [hl]
-	ld c, a
-	; T' = T + dy
-	ld a, [hl]
+	ld [de], a
+	inc de
+	ld a, [hl+] ; top
 	add c
-	ld [hl+], a
-	; B' = B + dy
-	ld a, [hl]
+	ld [de], a
+	inc de
+	ld a, [hl+] ; bottom
 	add c
-	ld [hl+], a
+	ld [de], a
+	inc de
 	ret
 
 
@@ -215,7 +219,7 @@ assert COLLIDERS_POOL_SIZE <= 128
 	ld [bc], a
 	inc bc
 	ld a, e
-	cp low(wColliders) + COLLIDERS_POOL_SIZE
+	cp COLLIDERS_POOL_SIZE
 	jr c, :-
 
 	ret

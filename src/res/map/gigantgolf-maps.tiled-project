@@ -7,6 +7,21 @@
     "folders": [
         "."
     ],
+    "properties": [
+    ],
     "propertyTypes": [
+        {
+            "color": "#ffd09ec8",
+            "drawFill": true,
+            "id": 5,
+            "members": [
+            ],
+            "name": "CollisionShape",
+            "type": "class",
+            "useAs": [
+                "property",
+                "object"
+            ]
+        }
     ]
 }

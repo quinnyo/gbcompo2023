@@ -129,7 +129,7 @@ Collide_set_box_max::
 
 ; @param B,C: new position X,Y (Left,Top)
 ; @param A: index
-; @mut: AF, BC, HL
+; @mut: AF, BC, DE, HL
 Collide_set_box_position::
 	ld l, a
 	call Collide_get_box_at

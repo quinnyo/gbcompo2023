@@ -29,17 +29,12 @@ section "ThingsImpl", rom0
 ; @mut: AF, HL
 Thing_init::
 	ld [hl+], a ; status
+	ld c, Thing_drawable - (Thing_status + 1)
 	ld a, $FF
-	ld [hl+], a ; collider
-	ld [hl+], a ; pos.0
-	ld [hl+], a ; pos.1
-	ld [hl+], a ; draw_mode
+	call mem_fill_byte
+	ld c, Thing_sz - Thing_drawable
 	xor a
-	ld [hl+], a ; drawable.0
-	ld [hl+], a ; drawable.1
-	ld [hl+], a ; on_die.0
-	ld [hl+], a ; on_die.1
-
+	call mem_fill_byte
 	ret
 
 
@@ -57,7 +52,7 @@ things_init::
 	ld [hl+], a       ; next.1
 
 	ld hl, wThings
-	ld bc, Thing_sz * ThingsMax
+	ld bc, THINGS_BUFFER_SIZE
 	ld d, fThingStatus_VOID
 	call mem_fill
 
@@ -124,20 +119,20 @@ things_update_colliders::
 	ld a, [wThingsInfo.count]
 	and a
 	ret z
-	ld e, a
 	ld hl, wThings
 .loop_things
 	ld a, [hl]
 	bit bThingStatus_VOID, a
-	jr nz, .loop_things_continue
+	jr nz, .next
 	and fThingStatus_HITS
-	jr z, .loop_things_continue
+	jr z, .next
 	push hl
-	inc hl
-	ld a, [hl+] ; collider
+rept 1 + Thing_collider - Thing_status
+	ld a, [hl+]
+endr
 	cp $FF
 	jr z, .no_collider
-	ld d, a
+	ld d, a     ; collider
 	ld a, [hl+] ; pos.x
 	ld b, a
 	ld a, [hl+] ; pos.y
@@ -146,16 +141,18 @@ things_update_colliders::
 	call Collide_set_box_position
 .no_collider
 	pop hl
-.loop_things_continue
+.next
 	ld a, Thing_sz
 	add l
 	ld l, a
 	adc h
 	sub l
 	ld h, a
-
-	dec e
-	jr nz, .loop_things
+	cp high(wThings + THINGS_BUFFER_SIZE)
+	jr c, .loop_things
+	ld a, l
+	cp low(wThings + THINGS_BUFFER_SIZE)
+	jr c, .loop_things
 	ret
 
 
@@ -264,94 +261,58 @@ things_draw::
 	ld a, [wThingsInfo.count]
 	and a
 	ret z
-	ld bc, wThings
-	call oam_next_recall
-
+	ld hl, wThings
 .loop_things
-	ld a, [bc] ; status
-	bit bThingStatus_VOID, a
-	jr nz, .next
-
-	inc bc ; status
-	inc bc ; collider
-
-	ld a, [bc]
-	inc bc
-	ldh [hThingCache.x], a
-	ld a, [bc]
-	inc bc
-	ldh [hThingCache.y], a
-	ld a, [bc]
-	inc bc
-	ld d, a
-	ld a, [bc]
-	inc bc
-	ldh [hThingCache.drawable + 0], a
-	ld a, [bc]
-	inc bc
-	ldh [hThingCache.drawable + 1], a
-
-	call _draw_cached_thing
-
-	inc bc ; on_die.0
-	inc bc ; on_die.1
-	jr .loop_things_continue
-
-.next
-	ld a, Thing_sz
-	add c
-	ld c, a
-	adc b
-	sub c
+	bit bThingStatus_VOID, [hl]
+	jr nz, .skip
+	push hl
+rept Thing_pos - Thing_status
+	ld a, [hl+]
+endr
+	ld a, [hl+]    ; .pos.x
 	ld b, a
-	jr .loop_things_continue
-
-.loop_things_continue
-	ld a, b
-	cp high(wThings + THINGS_BUFFER_SIZE)
-	jr c, .loop_things
-	ld a, c
-	cp low(wThings + THINGS_BUFFER_SIZE)
-	jr c, .loop_things
-
-	call oam_next_store
-
-	ret
-
-
-_draw_cached_thing:
-	ld a, d
+	ld a, [hl+]    ; .pos.y
+	ld c, a
+	ld a, [hl+]    ; .draw_mode
 	cp fThingDrawMode_Sprite
-	jr z, _draw_sprite
-	jr _draw_oam
-
-
-_draw_sprite:
-	push bc
-	ldh a, [hThingCache.x]
-	ld b, a
-	ldh a, [hThingCache.y]
-	ld c, a
-	ldh a, [hThingCache.drawable + 0]
+	; NOTE: preserving flags from CP above -- LD only
+	ld a, [hl+]
 	ld e, a
-	ldh a, [hThingCache.drawable + 1]
+	ld a, [hl+]
 	ld d, a
+	call oam_next_recall
+	jr nz, .draw_mode_oam
+.draw_mode_sprite
 	call Sprite_draw
-	pop bc
-	ret
-
-
-_draw_oam:
-	ldh a, [hThingCache.y]
+	jr .draw_end
+.draw_mode_oam
+	ld a, c
 	add OAM_Y_OFS
 	ld [hl+], a ; y
-	ldh a, [hThingCache.x]
+	ld a, b
 	add OAM_X_OFS
 	ld [hl+], a ; x
-	ldh a, [hThingCache.drawable + 0]
+	ld a, e
 	ld [hl+], a ; chr
-	ldh a, [hThingCache.drawable + 1]
+	ld a, d
 	ld [hl+], a ; attr
+.draw_end
+	call oam_next_store
+	pop hl         ; HL <= Thing*
+.skip
+	ld a, Thing_sz
+	add l
+	ld l, a
+	adc h
+	sub l
+	ld h, a
+.loop_things_continue
+	ld a, h
+	cp high(wThings + THINGS_BUFFER_SIZE)
+	jr c, .loop_things
+	ld a, l
+	cp low(wThings + THINGS_BUFFER_SIZE)
+	jr c, .loop_things
 	ret
 
 
@@ -368,16 +329,20 @@ _things_process_collisions::
 	ld a, [bc]       ; ThingInstance.status
 	bit bThingStatus_VOID, a
 	jr nz, .loop_things_continue
-
 	; clear event flags and store status
 	and ~fThingStatus_EV
 	ld [bc], a
 	and ~fThingStatus_HITS
 	ld d, a ; stash status flags (not HP)
-
-	inc bc ; to collider
-	ld a, [bc]        ; Thing.collider
-	dec bc ; back to status
+	; to collider
+rept Thing_collider - Thing_status
+	inc bc
+endr
+	ld a, [bc]
+	; back to status
+rept Thing_collider - Thing_status
+	dec bc
+endr
 	call Collide_get_status
 	; check if collision started (detect leading edge)
 	cp %01
@@ -395,7 +360,6 @@ _things_process_collisions::
 	; recombine HP (A) with status flags (D)
 	or d
 	ld [bc], a
-
 .loop_things_continue
 	; move to next Thing
 	ld a, Thing_sz
@@ -404,8 +368,6 @@ _things_process_collisions::
 	adc b
 	sub c
 	ld b, a
-
 	dec e
 	jr nz, .loop_things
-
 	ret

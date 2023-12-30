@@ -9,10 +9,10 @@ wThingsInfo::
 	.just_hit::  db ; number of things that were hit in the most recent update
 	.just_died:: db ; number of things that died in the most recent update
 	.targets::   db ; number of things that are targets
-	.count::     db
-	.next::      dw ; pointer to end of wThings array
+	.count:      db
+	.next:       dw ; pointer to end of wThings array
 
-wThings:: ds THINGS_BUFFER_SIZE
+wThings: ds THINGS_BUFFER_SIZE
 
 section "ThingCache", hram
 hThingCache:

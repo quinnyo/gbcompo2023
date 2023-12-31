@@ -115,6 +115,64 @@ class MapTileset:
         return len(self.used_gids) == 0
 
 
+class LegacyThingDef:
+    def __init__(self, chr_code: int, oam_attr: int):
+        self.chr_code: int = chr_code
+        self.oam_attr: int = oam_attr
+
+    def get_def_id(self) -> int:
+        import ctypes
+        h = hash(f"LegacyThingDef{self.chr_code}{self.oam_attr}howdopython?")
+        return ctypes.c_ulong(h).value
+
+    def get_def_label(self) -> str:
+        keyword = self.get_def_id()
+        return f".thing{keyword:x}"
+
+    def get_asm(self) -> [str]:
+        return [
+            f"\t{self.get_def_label()}:",
+            f"\t\tDefThingLegacy tThings + {self.chr_code}, {self.oam_attr}"
+        ]
+
+
+class ThingPlacement:
+    def __init__(self, pos_x: int, pos_y: int, thing_def):
+        self.pos_x: int = pos_x
+        self.pos_y: int = pos_y
+        self.thing_def: int = thing_def
+
+    def get_asm(self) -> [str]:
+        return [
+            f"\tThingcInstance {self.thing_def.get_def_label()}",
+            f"\tThingcPosition {self.pos_x}, {self.pos_y}",
+            f"\tThingcSave",
+        ]
+
+
+class Things:
+    def __init__(self):
+        self.thing_defs = {}
+        self.thing_placements = []
+
+    def place_legacy_thing(self, pos_x: int, pos_y: int, chr_code: int, oam_attr: int):
+        td = LegacyThingDef(chr_code, oam_attr)
+        self.thing_defs[td.get_def_id()] = td
+        self.thing_placements.append(ThingPlacement(pos_x, pos_y, td))
+
+    def get_defs_asm(self) -> [str]:
+        lines: [str] = []
+        for td in self.thing_defs.values():
+            lines.extend(td.get_asm())
+        return lines
+
+    def get_placements_asm(self) -> [str]:
+        lines: [str] = []
+        for placem in self.thing_placements:
+            lines.extend(placem.get_asm())
+        return lines
+
+
 class Map:
     def process_tmx(self, tmx: TiledMap):
         self.tee_x = 0
@@ -285,18 +343,21 @@ class Map:
 
         # Things
         if len(self.things) > 0:
-            lines = []
+            thinger = Things()
             for obj in self.things:
                 chr_code = gid_to_obj_index[obj.gid & MASK_GID]
                 oam_attr = self.gid_to_oam_attr(obj.gid)
                 pos_x = round(obj.coordinates.x)
                 pos_y = round(obj.coordinates.y - 8)
-                lines.append(f"\t\tPlaceThingLegacy {pos_y}, {pos_x}, tThings + {chr_code}, {oam_attr}")
+                thinger.place_legacy_thing(pos_x, pos_y, chr_code, oam_attr)
+
             things_chunk = ASM_THINGS.replace(
-                "%THING_COUNT%", str(len(self.things)))
-            things_chunk = things_chunk.replace("%THINGS%", "\n".join(lines))
+                "%THINGS%", "\n".join(thinger.get_placements_asm()))
+            things_chunk = things_chunk.replace(
+                "%THING_DEFS%", "\n".join(thinger.get_defs_asm()))
             builder.append_chunk_text(things_chunk)
 
+        # End
         builder.append_chunk_text(ASM_END)
         return builder.build(self.map_name)
 
@@ -430,9 +491,10 @@ ASM_HEIGHTMAP = """\tdb MapChunk_Terrain
 """
 
 ASM_THINGS = """\tdb MapChunk_Things
-\t.things:
 %THINGS%
-\t\tdb tc_Stop
+\tThingcStop
+%THING_DEFS%
+\tThingcStop
 """
 
 ASM_END = """\tdb MapChunk_End

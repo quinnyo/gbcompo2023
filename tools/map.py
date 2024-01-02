@@ -72,6 +72,9 @@ class TileSource:
         """Return range of GIDs contained by this tileset."""
         return range(self.tileset.firstgid, self.tileset.firstgid + self.tileset.tile_count)
 
+    def has_gid(self, gid: int) -> bool:
+        return (gid & MASK_GID) in self.get_gid_range()
+
     def get_res_path(self) -> Path:
         """
         return Tileset source image ChrSource resource path
@@ -101,18 +104,17 @@ class MapTileset:
 class TileTracker:
     def __init__(self):
         self.sources: [TileSource] = []
-        self.gid_to_source: dict = {}
 
     def add_source_tilesets(self, tmx: TiledMap):
         for tileset in tmx.tilesets.values():
             source = TileSource(tileset)
             self.sources.append(source)
-            for gid in source.get_gid_range():
-                self.gid_to_source[gid] = source
 
     def require_gid_source(self, gid: int) -> TileSource:
-        assert gid & MASK_GID in self.gid_to_source
-        return self.gid_to_source[gid & MASK_GID]
+        for source in self.sources:
+            if source.has_gid(gid):
+                return source
+        return None
 
     def build_tileset_loadocode(self, tileset: MapTileset, block: int) -> [str]:
         if tileset.is_empty():

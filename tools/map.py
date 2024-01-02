@@ -14,38 +14,32 @@ from pytiled_parser.tiled_map import TiledMap, Tileset
 from pytiled_parser.layer import TileLayer, ObjectLayer
 
 
-# Tileset custom property key
-PROP_TILESET = "gigantgolf_tileset"
-# Identifies a tileset as the terrain/background tileset...
-TILESET_BG = "bg"
-# Identifies a tileset as the building/object tileset...
-TILESET_FG = "fg"
 CLASS_LAYER_FG = "fg"
 CLASS_LAYER_BG = "bg"
 # 'class' of the tee-off location object
 CLASS_TEE_OFF = "tee_off"
 CLASS_HEIGHTMAP_CONTOUR = "heightmap_contour"
 
-MASK_GID = 0x0fffffff
-MASK_GID_FLAGS = 0xf0000000
-GID_FLIPPED_HORI = 0x80000000
-GID_FLIPPED_VERT = 0x40000000
-GID_FLIPPED_DIAG = 0x20000000
-GID_ROTATED_HEX_120 = 0x10000000
 
-BGATTR_PRIORITY  = 0x80
-BGATTR_FLIP_VERT = 0x40
-BGATTR_FLIP_HORI = 0x20
-_BGATTR_UNUSED   = 0x10
-BGATTR_BANK      = 0x08
-BGATTR_PAL_COL   = 0x07
+MASK_GID             = 0x0fffffff
+GID_FLIPPED_HORI     = 0x80000000
+GID_FLIPPED_VERT     = 0x40000000
+GID_FLIPPED_DIAG     = 0x20000000
+GID_ROTATED_HEX_120  = 0x10000000
 
-OAM_PRIORITY = 0x80
-OAM_FLIP_VERT = 0x40
-OAM_FLIP_HORI = 0x20
-OAM_PAL_DMG = 0x10
-OAM_CHR_BANK = 0x08
-OAM_PAL_COL = 0x07
+BGATTR_PRIORITY      = 0x80
+BGATTR_FLIP_VERT     = 0x40
+BGATTR_FLIP_HORI     = 0x20
+_BGATTR_UNUSED       = 0x10
+BGATTR_BANK          = 0x08
+BGATTR_PAL_COL       = 0x07
+
+OAM_PRIORITY         = 0x80
+OAM_FLIP_VERT        = 0x40
+OAM_FLIP_HORI        = 0x20
+OAM_PAL_DMG          = 0x10
+OAM_CHR_BANK         = 0x08
+OAM_PAL_COL          = 0x07
 
 
 LOG_LEVEL_VERBOSE = -1

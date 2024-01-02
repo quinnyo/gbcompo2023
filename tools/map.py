@@ -405,10 +405,10 @@ class Map:
     @staticmethod
     def gid_to_bg_attr(gid: int) -> int:
         oam_attr = 0
-        if obj.gid & GID_FLIPPED_VERT:
-            oam_attr |= OAM_FLIP_VERT
-        if obj.gid & GID_FLIPPED_HORI:
-            oam_attr |= OAM_FLIP_HORI
+        if gid & GID_FLIPPED_VERT:
+            bg_attr |= BG_FLIP_VERT
+        if gid & GID_FLIPPED_HORI:
+            bg_attr |= BG_FLIP_HORI
         return oam_attr
 
     @staticmethod

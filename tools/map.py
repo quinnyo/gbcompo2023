@@ -82,6 +82,22 @@ class TileSource:
         return image_rel.with_suffix(".2bpp")
 
 
+class MapTileset:
+    def __init__(self):
+        self.used_gids: [int] = []
+
+    def insert_gid(self, gid: int):
+        if not gid & MASK_GID in self.used_gids:
+            insort(self.used_gids, gid & MASK_GID)
+
+    def find_gid(self, gid: int) -> int:
+        if gid & MASK_GID in self.used_gids:
+            return self.used_gids.index(gid & MASK_GID)
+
+    def is_empty(self) -> bool:
+        return len(self.used_gids) == 0
+
+
 class TileTracker:
     def __init__(self):
         self.sources: [TileSource] = []
@@ -98,21 +114,42 @@ class TileTracker:
         assert gid & MASK_GID in self.gid_to_source
         return self.gid_to_source[gid & MASK_GID]
 
+    def build_tileset_loadocode(self, tileset: MapTileset, block: int) -> [str]:
+        if tileset.is_empty():
+            return []
 
-class MapTileset:
-    def __init__(self):
-        self.used_gids: [int] = []
+        lines = []
+        lines.append("\tdb MapChunk_Loado")
+        lines.append(f"\tdb LOADOCODE_CHRB_{block}")
+        if block == 0:
+            lines.append(f"\tdb LOADOCODE_DEST_CHR, tThings")
 
-    def insert_gid(self, gid: int):
-        if not gid & MASK_GID in self.used_gids:
-            insort(self.used_gids, gid & MASK_GID)
+        def _append_run(start: int, count: int):
+            if count > 0:
+                lines.append(f"\tdb LOADOCODE_SRC_CHR, {start}")
+                lines.append(f"\tdb LOADOCODE_CHRCOPY, {count}")
 
-    def find_gid(self, gid: int) -> int:
-        if gid & MASK_GID in self.used_gids:
-            return self.used_gids.index(gid & MASK_GID)
+        source = None
+        seqs = SequenceEncoder()
+        for gid in tileset.used_gids:
+            new_source = self.require_gid_source(gid)
+            if new_source != source:
+                # changing source, always break
+                start, count = seqs.break_run()
+                _append_run(start, count)
+                source = new_source
+                lines.append(f'\tLoadocodeROMB "{source.get_res_path()}"')
+                lines.append("\tdb LOADOCODE_SRC")
+                reslabel = str(source.get_res_path()).replace("/", "_").replace(".", "_")
+                lines.append(f"\tdw {reslabel}")
 
-    def is_empty(self) -> bool:
-        return len(self.used_gids) == 0
+            start, count = seqs.push(source.to_local_id(gid))
+            _append_run(start, count)
+
+        start, count = seqs.break_run()
+        _append_run(start, count)
+        lines.append("\tdb LOADOCODE_STOP")
+        return lines
 
 
 class LegacyThingDef:
@@ -309,11 +346,11 @@ class Map:
 
         # Tileset
         if not self.tileset_bg.is_empty():
-            lines = self.build_tileset_loadocode(self.tileset_bg, 1)
+            lines = self.tile_tracker.build_tileset_loadocode(self.tileset_bg, 1)
             builder.append_chunk_text("\n".join(lines))
 
         if not self.tileset_obj.is_empty():
-            lines = self.build_tileset_loadocode(self.tileset_obj, 0)
+            lines = self.tile_tracker.build_tileset_loadocode(self.tileset_obj, 0)
             builder.append_chunk_text("\n".join(lines))
 
         # Tilemap
@@ -362,46 +399,6 @@ class Map:
         # End
         builder.append_chunk_text(ASM_END)
         return builder.build(self.map_name)
-
-    def build_tileset_loadocode(self, tileset: MapTileset, block: int) -> [str]:
-        if tileset.is_empty():
-            return []
-
-        lines = []
-        lines.append("\tdb MapChunk_Loado")
-        lines.append(f"\tdb LOADOCODE_CHRB_{block}")
-        if block == 0:
-            lines.append(f"\tdb LOADOCODE_DEST_CHR, tThings")
-
-        def _append_run(start: int, count: int):
-            if count > 0:
-                lines.append(f"\tdb LOADOCODE_SRC_CHR, {start}")
-                lines.append(f"\tdb LOADOCODE_CHRCOPY, {count}")
-
-        source = None
-        seqs = SequenceEncoder()
-        for gid in tileset.used_gids:
-            new_source = self.tile_tracker.require_gid_source(gid)
-            if new_source != source:
-                # changing source, always break
-                start, count = seqs.break_run()
-                _append_run(start, count)
-
-                source = new_source
-                lines.append(f'\tLoadocodeROMB "{source.get_res_path()}"')
-                lines.append("\tdb LOADOCODE_SRC")
-                reslabel = str(source.get_res_path()).replace("/", "_").replace(".", "_")
-                lines.append(f"\tdw {reslabel}")
-
-            start, count = seqs.push(source.to_local_id(gid))
-            _append_run(start, count)
-
-        start, count = seqs.break_run()
-        _append_run(start, count)
-
-        lines.append("\tdb LOADOCODE_STOP")
-
-        return lines
 
     @staticmethod
     def gid_to_bg_attr(gid: int) -> int:

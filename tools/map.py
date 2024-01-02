@@ -5,7 +5,8 @@ import sys
 from argparse import ArgumentParser
 from pathlib import Path
 from math import floor
-from bisect import insort
+from bisect import insort, bisect_left
+from typing import Dict
 
 import pytiled_parser
 from pytiled_parser import tiled_object
@@ -80,19 +81,26 @@ class TileSource:
 
 
 class MapTileset:
-    def __init__(self):
+    def __init__(self, chr_offset: int = 0, fallback_chr: int = 0):
         self.used_gids: [int] = []
+        self.chr_offset: int = chr_offset
+        self.fallback_chr: int = fallback_chr
 
     def insert_gid(self, gid: int):
-        if not gid & MASK_GID in self.used_gids:
-            insort(self.used_gids, gid & MASK_GID)
-
-    def find_gid(self, gid: int) -> int:
-        if gid & MASK_GID in self.used_gids:
-            return self.used_gids.index(gid & MASK_GID)
+        gid = gid & MASK_GID
+        if not gid in self.used_gids:
+            insort(self.used_gids, gid)
 
     def is_empty(self) -> bool:
         return len(self.used_gids) == 0
+
+    def gid_to_chr(self, gid: int) -> int:
+        gid = gid & MASK_GID
+        if gid == 0:
+            return self.fallback_chr
+        i = bisect_left(self.used_gids, gid)
+        assert i < len(self.used_gids) and self.used_gids[i] == gid
+        return i + self.chr_offset
 
 
 class TileTracker:
@@ -190,26 +198,48 @@ class Things:
         self.thing_defs = {}
         self.thing_placements = []
 
-    def place_legacy_thing(self, pos_x: int, pos_y: int, chr_code: int, oam_attr: int):
+    def place_legacy_thing(self, pos_x: int, pos_y: int, chr_code: int, oam_attr: int) -> int:
         td = LegacyThingDef(chr_code, oam_attr)
         self.thing_defs[td.get_def_id()] = td
-        self.thing_placements.append(ThingPlacement(pos_x, pos_y, len(self.thing_placements), td))
+        tag = len(self.thing_placements)
+        self.thing_placements.append(ThingPlacement(pos_x, pos_y, tag, td))
+        return tag
 
     def get_defs_asm(self) -> [str]:
-        lines: [str] = []
+        if len(self.thing_defs) == 0:
+            return []
+        lines: [str] = [
+            f"\t;       defs ({len(self.thing_defs)})",
+        ]
         for td in self.thing_defs.values():
             lines.extend(td.get_asm())
+        lines.append("\tThingcStop")
         return lines
 
     def get_placements_asm(self) -> [str]:
-        lines: [str] = []
-        for placem in self.thing_placements:
-            lines.extend(placem.get_asm())
+        if len(self.thing_placements) == 0:
+            return []
+        lines: [str] = [
+            f"\t; placements ({len(self.thing_placements)})",
+        ]
+        for tp in self.thing_placements:
+            lines.extend(tp.get_asm())
+        lines.append("\tThingcStop")
+        return lines
+
+    def get_chunk_asm(self) -> [str]:
+        if len(self.thing_placements) == 0 and len(self.thing_defs) == 0:
+            return None
+        lines: [str] = [
+            "\tdb MapChunk_Things",
+        ]
+        lines.extend(self.get_placements_asm())
+        lines.extend(self.get_defs_asm())
         return lines
 
 
 class Map:
-    def process_tmx(self, tmx: TiledMap):
+    def process_tmx(self, tmx: TiledMap, args):
         self.tee_x = 0
         self.tee_y = 0
         map_name, _ext = os.path.splitext(tmx.map_file.name)
@@ -221,9 +251,11 @@ class Map:
         self.heightmap_contour = []
         self.heightmap = []
         self.tile_tracker: TileTracker = TileTracker()
-        self.tileset_bg: MapTileset = MapTileset()
+        self.tileset_bg: MapTileset = MapTileset(args.bg_tile_offset, args.bg_tile_default)
         self.tileset_obj: MapTileset = MapTileset()
-        self.things: [tiled_object.Tile] = []
+        self.thing_tiles: [tiled_object.Tile] = []
+        self.things: Things = Things()
+        self.subthing_pairs: [(int, int)] = []
 
         for y in range(self.rows):
             self.tilemap.append([0] * self.columns)
@@ -232,6 +264,8 @@ class Map:
 
         for layer in tmx.layers:
             self.process_layer(layer)
+
+        self.process_things()
 
         if len(self.heightmap_contour) > 0:
             self.build_heightmap(self.heightmap_contour)
@@ -258,7 +292,7 @@ class Map:
                 else:
                     logwarn("Non-polyline heightmap contour object found.")
             elif isinstance(obj, tiled_object.Tile):
-                self.things.append(obj)
+                self.thing_tiles.append(obj)
                 self.tileset_obj.insert_gid(obj.gid)
                 self.hack_damaged_things(obj.gid & MASK_GID)
 
@@ -273,6 +307,34 @@ class Map:
                 self.tileset_obj.insert_gid(gid + 2)
             else:
                 self.tileset_obj.insert_gid(gid + 1)
+
+    def process_things(self):
+        """Add the gathered thing tile objects to Things builder.
+        Resolve parents by converting TiledObject ID into Thing Tag.
+        Add (parent, child) relations to subthing_pairs.
+        """
+        oid_tag_map = {} # oid -> tag
+        unresolved_subthings = [] # (parent_oid, child_tag)
+        for obj in self.thing_tiles:
+            chrid = self.tileset_obj.gid_to_chr(obj.gid)
+            oam_attr = self.gid_to_oam_attr(obj.gid)
+            pos_x = round(obj.coordinates.x)
+            pos_y = round(obj.coordinates.y - 8)
+            tag = self.things.place_legacy_thing(pos_x, pos_y, chrid, oam_attr)
+            oid_tag_map[obj.id] = tag
+            parentval = obj.properties.get("parent", None)
+            if not parentval:
+                continue
+
+            if type(parentval) == int:
+                parentid = parentval
+            else:
+                parentid = int(parentval)
+            unresolved_subthings.append((parentid, tag))
+
+        for parent_oid, child_tag in unresolved_subthings:
+            parent_tag = oid_tag_map[parent_oid]
+            self.subthing_pairs.append((parent_tag, child_tag))
 
     def process_tile_layer(self, layer: TileLayer):
         if layer.class_ == CLASS_LAYER_FG:
@@ -323,14 +385,6 @@ class Map:
         self.heightmap = [sample(x) for x in range(height_columns)]
 
     def write_asm(self, args):
-        # Tileset index map
-        gid_to_bg_index = {}
-        for index, gid in enumerate(self.tileset_bg.used_gids):
-            gid_to_bg_index[gid] = index + args.bg_tile_offset
-        gid_to_obj_index = {}
-        for index, gid in enumerate(self.tileset_obj.used_gids):
-            gid_to_obj_index[gid] = index
-
         builder = AsmBuilder()
 
         # MapInfo
@@ -353,7 +407,7 @@ class Map:
         if len(self.tilemap) > 0:
             asm_tile_lines = []
             for row in self.tilemap:
-                converted = [gid_to_bg_index.get(gid & MASK_GID, args.bg_tile_default) for gid in row]
+                converted = [self.tileset_bg.gid_to_chr(gid) for gid in row]
                 asm_row = ", ".join([f"${idx:02X}" for idx in converted])
                 asm_tile_lines.append("\t\tdb " + asm_row)
 
@@ -377,20 +431,9 @@ class Map:
             builder.append_chunk_text(asm_heightmap)
 
         # Things
-        if len(self.things) > 0:
-            thinger = Things()
-            for obj in self.things:
-                chr_code = gid_to_obj_index[obj.gid & MASK_GID]
-                oam_attr = self.gid_to_oam_attr(obj.gid)
-                pos_x = round(obj.coordinates.x)
-                pos_y = round(obj.coordinates.y - 8)
-                thinger.place_legacy_thing(pos_x, pos_y, chr_code, oam_attr)
-
-            things_chunk = ASM_THINGS.replace(
-                "%THINGS%", "\n".join(thinger.get_placements_asm()))
-            things_chunk = things_chunk.replace(
-                "%THING_DEFS%", "\n".join(thinger.get_defs_asm()))
-            builder.append_chunk_text(things_chunk)
+        things_lines = self.things.get_chunk_asm()
+        if things_lines and len(things_lines) > 0:
+            builder.append_chunk_text("\n".join(things_lines))
 
         # End
         builder.append_chunk_text(ASM_END)
@@ -485,13 +528,6 @@ ASM_HEIGHTMAP = """\tdb MapChunk_Terrain
 %HEIGHTMAP_DATA%
 """
 
-ASM_THINGS = """\tdb MapChunk_Things
-%THINGS%
-\tThingcStop
-%THING_DEFS%
-\tThingcStop
-"""
-
 ASM_END = """\tdb MapChunk_End
 """
 
@@ -522,7 +558,7 @@ def main():
 
     tmx = pytiled_parser.parse_map(args.infile)
     map_data = Map()
-    map_data.process_tmx(tmx)
+    map_data.process_tmx(tmx, args)
     asm = map_data.write_asm(args)
 
     if args.out:

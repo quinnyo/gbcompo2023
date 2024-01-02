@@ -373,3 +373,46 @@ endr
 	dec e
 	jr nz, .loop_things
 	ret
+
+
+; Find the first Thing with a tag matching the provided value.
+; @param B: query tag
+; @mut: AF, C, HL
+; @return F.C: set if no match found
+; @return HL: found Thing*
+TagThings_query_tag::
+	ld a, [wThingsInfo.count]
+	and a
+	jr z, .not_found
+	ld c, a
+	ld hl, wThings
+.loop
+	bit bThingStatus_VOID, [hl]
+	jr nz, .continue
+	inc hl      ; .status
+	ld a, [hl-] ; .tag
+	cp b
+	ret z ; return NC (CP set Z so must be)
+.continue
+	ld a, Thing_sz
+	add l
+	ld l, a
+	adc h
+	sub l
+	ld h, a
+	dec c
+	jr nz, .loop
+.not_found
+	ld hl, 0
+	scf
+	ret
+
+
+; Mark the Thing with tag as destroyed (if found).
+; @param B: query tag
+; @mut: AF, C, HL
+TagThings_kill::
+	call TagThings_query_tag
+	ret c
+	set bThingStatus_EV_DIE, [hl]
+	ret

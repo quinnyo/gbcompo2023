@@ -137,15 +137,17 @@ class LegacyThingDef:
 
 
 class ThingPlacement:
-    def __init__(self, pos_x: int, pos_y: int, thing_def):
+    def __init__(self, pos_x: int, pos_y: int, tag: int, thing_def):
         self.pos_x: int = pos_x
         self.pos_y: int = pos_y
+        self.tag: int = tag
         self.thing_def: int = thing_def
 
     def get_asm(self) -> [str]:
         return [
             f"\tThingcInstance {self.thing_def.get_def_label()}",
             f"\tThingcPosition {self.pos_x}, {self.pos_y}",
+            f"\tThingcTag {self.tag}",
             f"\tThingcSave",
         ]
 
@@ -158,7 +160,7 @@ class Things:
     def place_legacy_thing(self, pos_x: int, pos_y: int, chr_code: int, oam_attr: int):
         td = LegacyThingDef(chr_code, oam_attr)
         self.thing_defs[td.get_def_id()] = td
-        self.thing_placements.append(ThingPlacement(pos_x, pos_y, td))
+        self.thing_placements.append(ThingPlacement(pos_x, pos_y, len(self.thing_placements), td))
 
     def get_defs_asm(self) -> [str]:
         lines: [str] = []

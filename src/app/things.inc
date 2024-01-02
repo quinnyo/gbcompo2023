@@ -240,7 +240,7 @@ macro ThingcDieGoto
 endm
 
 
-; PlaceThingLegacy POS_Y, POS_X, CHR, OAM_ATTR
+; DefThingLegacy CHR, OAM_ATTR
 ;
 ; A Thingcode template for creating Things that behave as the original Things
 ; (pre-Thingcode) did. Uses a single OAM entry and a generated 8x8 collider.
@@ -249,30 +249,6 @@ endm
 ; When hit, the CHR used to draw it is incremented by one. This happens twice,
 ; so Tile data must be layed out accordingly, with the provided CHR being the
 ; initial state, followed by two successively more destroyed versions.
-macro PlaceThingLegacy
-	ThingcNew
-	ThingcDrawOAM (\3), (\4)
-	ThingcPosition (\2), (\1)
-	ThingcCollideTile
-	ThingcHits 1
-	ThingcDieGoto .\@_0
-	ThingcSave
-	ThingcGoto .\@_done
-.\@_0:
-	ThingcDrawOAM (\3) + 1, (\4)
-	ThingcHits 1
-	ThingcDieGoto .\@_1
-	ThingcSave
-	ThingcStop
-.\@_1:
-	ThingcDrawOAM (\3) + 2, (\4)
-	ThingcDieGoto 0
-	ThingcSave
-	ThingcStop
-.\@_done:
-endm
-
-; DefThingLegacy CHR, OAM_ATTR
 macro DefThingLegacy
 	ThingcNew
 	ThingcDrawOAM (\1), (\2)
@@ -293,6 +269,5 @@ macro DefThingLegacy
 	ThingcSave
 	ThingcStop
 endm
-
 
 endc ; APP_THINGS_INC

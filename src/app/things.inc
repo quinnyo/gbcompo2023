@@ -13,6 +13,13 @@ destroyed by the player (by hitting the Ballder into them).
 An instance of a Thing (entity).
 
 
+***************************************************************** Thing ID Tag *
+Thing instances have a one byte ID tag. These can be used as handles/references.
+- usage is optional
+- user allocates/assigns IDs
+- valid ID tags are unique
+
+
 *********************************************************** Thing.status: bits *
 HITS        ( 0, 2 )
 	The number of hits the Thing takes before it dies.
@@ -54,12 +61,14 @@ def ThingsMax equ 16
 
 	stdecl Thing
 		stfield status      ; Thing status flags
+		stfield tag         ; ID tag
 		stfield collider    ; collider index
 		stfield pos, 2      ; 2D position vector
 		stfield draw_mode
 		stfield drawable, 2
 		stfield on_die, w   ; jump to here when destroyed
 	stclose
+
 
 ; Thing.status constants
 
@@ -87,6 +96,12 @@ rsreset
 def fThingDrawMode_OAM      rb 1 ; Drawable is OAM object { CHR, ATTR }
 def fThingDrawMode_Sprite   rb 1 ; Drawable is pointer to Sprite
 def fThingDrawMode__COUNT   rb 0
+
+
+; Thing.tag
+
+; The default tag
+def ThingTag_UNSET equ $FF
 
 
 ; ThingMachine status flags
@@ -118,6 +133,7 @@ def tc_CollideTile    rb 1
 def tc_CollideBox     rb 1
 def tc1               rb 0
 def tc_Hits           rb 1
+def tc_Tag            rb 1
 def tc2               rb 0
 def tc_Goto           rb 1
 def tc_Instance       rb 1
@@ -173,6 +189,12 @@ macro ThingcHits
 	assert fatal, _NARG == 1
 	assert fatal, (\1) <= fThingStatus_HITS
 	db tc_Hits, (\1)
+endm
+
+
+macro ThingcTag
+	assert fatal, _NARG == 1
+	db tc_Tag, (\1)
 endm
 
 

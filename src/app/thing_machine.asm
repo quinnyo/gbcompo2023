@@ -167,6 +167,7 @@ tcm_step::
 	dw _tcx_CollideBox
 	; tc1
 	dw _tcx_Hits
+	dw _tcx_Tag
 	; tc2
 	dw _tcx_Goto
 	dw _tcx_Instance
@@ -272,6 +273,13 @@ _tcx_Hits::
 	and ~fThingStatus_HITS
 	or d
 	ld [hl], a
+	ret
+
+
+; @param D: new ID tag value
+_tcx_Tag::
+	ld a, d
+	ld [wThingCache.tag], a
 	ret
 
 

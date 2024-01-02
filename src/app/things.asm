@@ -171,16 +171,17 @@ things_think::
 	ld a, [wThingsInfo.count]
 	ld e, a
 .loop_things
-	bit bThingStatus_VOID, [hl]
+	ld a, [hl]        ; status
+	bit bThingStatus_VOID, a
 	jr nz, .loop_things_continue
 
-	bit bThingStatus_EV_DIE, [hl]
+	bit bThingStatus_EV_DIE, a
 	jr z, .ev_die_done
 
-	bit bThingStatus_TARGET, [hl]
+	bit bThingStatus_TARGET, a
 	jr z, .target_done
 	inc d
-	res bThingStatus_TARGET, [hl]
+	res bThingStatus_TARGET, a
 .target_done
 
 	inc b             ; just_died++
@@ -195,10 +196,14 @@ things_think::
 	pop af
 .ev_die_done
 
-	bit bThingStatus_EV_HIT, [hl]
+	bit bThingStatus_EV_HIT, a
 	jr z, .ev_hit_done
 	inc c             ; just_hit++
 .ev_hit_done
+
+	; clear event flags and write status back out
+	and ~fThingStatus_EV
+	ld [hl], a
 
 .loop_things_continue
 	ld a, Thing_sz
@@ -329,16 +334,14 @@ _things_process_collisions::
 	ld a, [bc]       ; ThingInstance.status
 	bit bThingStatus_VOID, a
 	jr nz, .loop_things_continue
-	; clear event flags and store status
-	and ~fThingStatus_EV
-	ld [bc], a
+	; D <= status, preserve status flags (not HP)
 	and ~fThingStatus_HITS
-	ld d, a ; stash status flags (not HP)
+	ld d, a
 	; to collider
 rept Thing_collider - Thing_status
 	inc bc
 endr
-	ld a, [bc]
+	ld a, [bc]                    ; collider
 	; back to status
 rept Thing_collider - Thing_status
 	dec bc
@@ -348,14 +351,14 @@ endr
 	cp %01
 	jr nz, .loop_things_continue
 .handle_hit ; Thing has been hit
-	set bThingStatus_EV_HIT, d
-	ld a, [bc]
-	and fThingStatus_HITS
+	ld a, [bc]                    ; status
+	set bThingStatus_EV_HIT, a
+	and fThingStatus_HITS ; just hits
 	jr z, .handle_hit_done
-	dec a
+	dec a                 ; hits--
 	jr nz, .handle_hit_done
 	; Thing has been killed
-	set bThingStatus_EV_DIE, d
+	set bThingStatus_EV_DIE, a
 .handle_hit_done
 	; recombine HP (A) with status flags (D)
 	or d

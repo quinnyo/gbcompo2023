@@ -85,7 +85,6 @@ things_init_next::
 
 
 things_start::
-things_info_update::
 	ld a, [wThingsInfo.count]
 	and a
 	ret z

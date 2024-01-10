@@ -43,6 +43,7 @@ Game::
 
 	call gfx_load_game_obj
 	call gfx_load_bg_tiles
+	call Rules_clear
 	call stats_init
 	call Effects_init
 	call Collide_init
@@ -166,7 +167,7 @@ _Game_update:
 	ld e, BallCollideThingRadius
 	call Collide_set_subject_missile
 	call Collide_all_subject
-
+	call Rules_tick
 	; update things
 	call things_think
 	ld a, [wThingsInfo.just_died]

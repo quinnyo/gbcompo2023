@@ -160,7 +160,7 @@
  </tile>
  <tile id="30">
   <objectgroup draworder="index" id="2">
-   <object id="2" x="1" y="1" width="6" height="7"/>
+   <object id="2" type="CollisionShape" x="1" y="1" width="6" height="7"/>
   </objectgroup>
  </tile>
  <tile id="32">
@@ -210,12 +210,12 @@
  </tile>
  <tile id="44">
   <objectgroup draworder="index" id="2">
-   <object id="1" type="CollisionShape" x="1" y="2" width="6" height="6"/>
+   <object id="1" type="CollisionShape" x="1" y="1" width="6" height="7"/>
   </objectgroup>
  </tile>
  <tile id="46">
   <objectgroup draworder="index" id="2">
-   <object id="1" type="CollisionShape" x="1" y="2" width="6" height="6"/>
+   <object id="1" type="CollisionShape" x="1" y="1" width="6" height="7"/>
   </objectgroup>
  </tile>
 </tileset>

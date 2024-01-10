@@ -22,6 +22,25 @@
                 "property",
                 "object"
             ]
+        },
+        {
+            "color": "#ffe1d662",
+            "drawFill": true,
+            "id": 6,
+            "members": [
+                {
+                    "name": "parent",
+                    "type": "object",
+                    "value": 0
+                }
+            ],
+            "name": "ThingTile",
+            "type": "class",
+            "useAs": [
+                "property",
+                "object",
+                "tile"
+            ]
         }
     ]
 }

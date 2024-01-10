@@ -377,14 +377,13 @@ endr
 
 ; Find the first Thing with a tag matching the provided value.
 ; @param B: query tag
-; @mut: AF, C, HL
 ; @return F.C: set if no match found
 ; @return HL: found Thing*
+; @mut: AF, HL
 TagThings_query_tag::
 	ld a, [wThingsInfo.count]
 	and a
 	jr z, .not_found
-	ld c, a
 	ld hl, wThings
 .loop
 	bit bThingStatus_VOID, [hl]
@@ -400,8 +399,14 @@ TagThings_query_tag::
 	adc h
 	sub l
 	ld h, a
-	dec c
-	jr nz, .loop
+
+	cp high(wThings + THINGS_BUFFER_SIZE - Thing_sz) ; F(C) = last.1 > H
+	jr c, .loop
+	jr nz, .not_found ; F(NC) && F(NZ) == last.1 < H
+	; last.1 == H
+	ld a, low(wThings + THINGS_BUFFER_SIZE - Thing_sz)
+	cp l ; F(C) = L > last.0
+	jr nc, .loop
 .not_found
 	ld hl, 0
 	scf
@@ -410,9 +415,22 @@ TagThings_query_tag::
 
 ; Mark the Thing with tag as destroyed (if found).
 ; @param B: query tag
-; @mut: AF, C, HL
+; @mut: AF, HL
 TagThings_kill::
 	call TagThings_query_tag
 	ret c
 	set bThingStatus_EV_DIE, [hl]
+	ret
+
+
+; Destroy a Thing.
+; @param B: query tag
+; @mut: AF, HL
+TagThings_destroy::
+	call TagThings_query_tag
+	ret c
+	ld a, [hl]
+	and ~fThingStatus_HITS
+	or fThingStatus_EV_DIE | fThingStatus_EV_HIT
+	ld [hl], a
 	ret

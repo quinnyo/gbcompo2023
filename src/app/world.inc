@@ -39,7 +39,10 @@ def MapChunk_Things equ 4
 Loado chunk: a Loado program for loading resources required by the map.
 */
 def MapChunk_Loado equ 5
-
+/*
+Rule chunk: load a rule
+*/
+def MapChunk_Rule equ 6
 
 	stdecl World
 		stfield xmin ; world bound left

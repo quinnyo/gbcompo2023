@@ -435,6 +435,28 @@ class Map:
         if things_lines and len(things_lines) > 0:
             builder.append_chunk_text("\n".join(things_lines))
 
+        # Rules
+        multithings = {}
+        for parent, child in self.subthing_pairs:
+            if not parent in multithings:
+                multithings[parent] = []
+            multithings[parent].append(child)
+        for parent, children in multithings.items():
+            rule_data_len = len(children) + 1
+            assert rule_data_len < 256
+            rule_type = 0 # standard rule
+            rule_bytes = [parent] + children
+            rule_str_bytes = ", ".join((f"{x}" for x in rule_bytes))
+            rules_lines = [
+                "\tdb MapChunk_Rule",
+                f"\tdb {rule_type}, {rule_data_len}",
+                "\tdw rule_multithing",
+                f"\tdb {rule_str_bytes}",
+            ]
+            # rules_lines.append(f"\tdb {rule_str_bytes}")
+
+            builder.append_chunk_text("\n".join(rules_lines))
+
         # End
         builder.append_chunk_text(ASM_END)
         return builder.build(self.map_name)
@@ -499,7 +521,7 @@ class AsmBuilder:
                 next_chunk = f".chunk{i + 1}"
             else:
                 next_chunk = "0"
-            asm += f"\tdw {next_chunk} ; next chunk\n"
+            asm += f"\tdw {next_chunk}\n"
             asm += chunk
         return asm
 

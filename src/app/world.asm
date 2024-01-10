@@ -204,6 +204,8 @@ world_load_map::
 	jr z, .load_things
 	cp MapChunk_Loado
 	jr z, .load_loado
+	cp MapChunk_Rule
+	jr z, .load_add_rule
 
 	jr .loop
 
@@ -235,6 +237,11 @@ world_load_map::
 	call loado_load_program ; DE is already program entry point
 	call loado_exec
 	jr .loop
+
+.load_add_rule:
+	call Rules_load
+	jr .loop
+
 
 ; Load map info chunk
 ; @param DE: source address

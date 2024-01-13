@@ -34,6 +34,9 @@ loado_load_program::
 	; wLoado.stat
 	ld a, LOADO_STATF_READY
 	ld [hl+], a
+	; reset source rom bank
+	xor a
+	ld [wLoado.msrc_romb0], a
 	ret
 
 
@@ -115,7 +118,7 @@ prg_panic:
 
 op1_romb0:
 	ld a, b
-	rst rom_sel
+	ld [wLoado.msrc_romb0], a
 	ret
 
 op1_src_chr:
@@ -167,7 +170,8 @@ op1_dest_chroff:
 	ret
 
 op1_chrcopy:
-	ld hl, wLoado.msrc
+	ld hl, wLoado.msrc_romb0
+	PushRomb [hl+]
 	ld a, [hl+]
 	ld d, [hl]
 	ld e, a
@@ -215,6 +219,8 @@ op1_chrcopy:
 	ld [wLoado.chrdest], a
 	ld a, h
 	ld [wLoado.chrdest + 1], a
+
+	PopRomb
 
 	ret
 

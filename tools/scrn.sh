@@ -37,5 +37,5 @@ w "	incbin \"${of_map}\""
 w ".end"
 w
 
-w "${of_base}_tiles_size equ ${of_base}_tiles.end - ${of_base}_tiles"
+w "def ${of_base}_tiles_size equ ${of_base}_tiles.end - ${of_base}_tiles"
 w

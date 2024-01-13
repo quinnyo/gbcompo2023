@@ -13,12 +13,16 @@ include "common.inc"
 section "audio", rom0
 
 ; Starts the hUGE track at HL
+; @param A: romb0
 music_play::
 	di
+	ld [wMusicRomb], a
 
 	call music_stop
 
+	PushRomb [wMusicRomb]
 	call hUGE_init
+	PopRomb
 
 	ldh a, [hAudioStatus]
 	set AUDIO_STATB_MUSIC, a
@@ -108,6 +112,7 @@ audio_update::
 	bit AUDIO_STATB_MUSIC, a
 	jr z, .no_music
 
+	PushRomb [wMusicRomb]
 	; mute music channels that are muted or used by sound player
 	ldh a, [hMusic.mute]
 	ld c, a
@@ -115,8 +120,8 @@ audio_update::
 	or c
 	ld c, a
 	call hUGE_set_mute
-
 	call hUGE_dosound
+	PopRomb
 .no_music
 
 	call sound_update
@@ -393,6 +398,8 @@ wMusctlCurrent:: db  ; music table index of active/playing track
 wMusctlQueue:: db    ; music table index of track to play next (if any)
 
 wSoundQueueDelay: db ; initial queue_delay value
+
+wMusicRomb: db ; the ROM bank that contains the current song data
 
 section "hAudio", hram
 

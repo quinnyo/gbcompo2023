@@ -24,6 +24,6 @@ get_area() {
   sed -n -e "/^$1/,/^$/ p"
 }
 
-# get ROMX section list
-cat "$_map_file" | filter_labels | get_area 'ROMX bank #1:'
+# get section list
+cat "$_map_file" | filter_labels
 

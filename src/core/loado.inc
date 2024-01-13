@@ -79,6 +79,7 @@ include "common.inc"
 		stfield prg, w
 		stfield stat
 
+		stfield msrc_romb0
 		stfield msrc, w ; source address
 		stfield mdest, w ; destination address
 		stfield chrsrc, w ; CHR source address offset

@@ -132,6 +132,30 @@ macro JumpSwitchBranch
 endm
 
 
+; PushRomb BANK
+; Pushes current ROMB to the stack before switching to the bank in A.
+; @param BANK: fragment to `ld` rom bank number from (i.e. `ld a, {BANK}` will be emitted)
+; @mut: AF
+macro PushRomb
+	assert _NARG == 1
+	ldh a, [hActiveROM]
+	push af
+	ld a, \1
+	rst rom_sel
+endm
+
+
+; PopRomb
+; Pop the bank from the stack and switch to it.
+; @mut: AF
+macro PopRomb
+	assert _NARG == 0
+	pop af
+	rst rom_sel
+endm
+
+
+
 /***********************************************************
 *                           SHRIMP: Shared Resource Import *
 ***********************************************************/

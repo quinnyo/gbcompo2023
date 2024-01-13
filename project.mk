@@ -17,8 +17,5 @@ MBC := MBC5+RAM+BATTERY
 # 0x02 = 8KiB (1 bank)
 SRAMSIZE := 0x02
 
-# Disable automatic `nop` after `halt`
-ASFLAGS += -h
-
 # Game Boy Color compatible
 FIXFLAGS += -c

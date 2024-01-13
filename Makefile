@@ -43,9 +43,9 @@ DEFS ?=
 
 # Argument constants
 INCDIRS  = src/ src/include/
-WARNINGS = all extra error
+WARNINGS = everything
 DEFVARS  = $(DEFS)
-ASFLAGS  = -p $(PADVALUE) $(addprefix -i,$(INCDIRS)) $(addprefix -W,$(WARNINGS))
+ASFLAGS  = -p $(PADVALUE) $(addprefix -I,$(INCDIRS)) $(addprefix -W,$(WARNINGS)) -Werror
 ifneq ($(strip $(DEFVARS)),)
 	ASFLAGS += $(addprefix -D,$(DEFVARS))
 endif
@@ -106,7 +106,7 @@ $(OBJDIR)/%.o: src/%
 # Generate dependency list (`mk` file)
 $(DEPDIR)/%.mk: src/%
 	@$(MKDIR_P) $(@D)
-	$(RGBASM) $(ASFLAGS) -M $(DEPDIR)/$*.mk -MG -MP -MQ $(OBJDIR)/$*.o -MQ $(DEPDIR)/$*.mk $<
+	$(RGBASM) $(ASFLAGS) -M $(DEPDIR)/$*.mk -MG -MP -MQ '$(OBJDIR)/$*.o $(DEPDIR)/$*.mk' $<
 
 # Require `mk` dependency file for all source files
 ifneq ($(MAKECMDGOALS),clean)

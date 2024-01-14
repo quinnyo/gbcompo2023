@@ -15,11 +15,11 @@ wBallPile_dirty: db
 
 
 section "BallPile", rom0
+; @param D: Number of spare balls to display initially
+; @mut: AF, BC, DE, HL
 BallPile_setup::
-	ld hl, $8000 + 16 * BALL_PILE_CHR0
-	ld de, res_ball_pile_2bpp
-	ld bc, 16 * BALL_PILE_CHR_COUNT
-	call vmem_copy
+	xor a
+	ld [wBallPile_dirty], a
 
 	call Ball_get_start_position
 	ld a, b
@@ -34,20 +34,20 @@ BallPile_setup::
 	ld a, h
 	ld [wBallPile_tile0 + 1], a
 
-	xor a
-	ld [wBallPile_dirty], a
-	ret
+	call BallPile_set
+
+	PushRomb bank("res/ball_pile.2bpp")
+	ld hl, $8000 + 16 * BALL_PILE_CHR0
+	ld de, res_ball_pile_2bpp
+	ld bc, 16 * BALL_PILE_CHR_COUNT
+	call vmem_copy
+	PopRomb
+
+	; FALLTHROUGH
 
 
-; Copy tiles to tilemap, if changed
-BallPile_draw::
-	ld hl, wBallPile_dirty
-	ld a, [hl]
-	and a
-	ret z
-	xor a
-	ld [hl], a
-
+; Copy tiles to tilemap immediately
+BallPile_draw_now:
 	ld hl, wBallPile_tile0
 	ld a, [hl+]
 	ld h, [hl]
@@ -64,7 +64,6 @@ BallPile_draw::
 	cp BOOTUP_A_CGB
 	ret nz
 
-	di
 	ld a, 1
 	ldh [rVBK], a
 	ld hl, wBallPile_tile0
@@ -80,6 +79,20 @@ BallPile_draw::
 	call vmem_fill_byte
 	xor a
 	ldh [rVBK], a
+	ret
+
+
+; Copy tiles to tilemap, if changed
+BallPile_draw::
+	ld hl, wBallPile_dirty
+	ld a, [hl]
+	and a
+	ret z
+	xor a
+	ld [hl], a
+
+	di
+	call BallPile_draw_now
 	reti
 
 

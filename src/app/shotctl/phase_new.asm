@@ -10,7 +10,7 @@ def TeeDefaultFrameDuration    equ   1 ; Display frames per sequence frame
 def TeeNewBallDelay            equ  30 ; Initial frame duration for new ball sequence
 
 
-section "TeeData", romx
+section "TeeData", rom0
 
 sprite_BallTee:
 	SpritePart tBall_A_cy, tBall_A_cx, tBall_A

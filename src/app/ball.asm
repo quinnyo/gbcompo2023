@@ -170,9 +170,8 @@ Ball_launch::
 	res bBallStatFreeze, [hl]
 
 	; change to 'going up' sprite
-	ld hl, wBallSprite
 	ld de, anim_Ballder_up
-	call sprite_init_anim
+	call Ball_set_anim
 
 	ld hl, snd_ball_hit
 	call sound_play
@@ -184,7 +183,10 @@ Ball_launch::
 ; @mut: AF, DE, HL
 Ball_set_anim::
 	ld hl, wBallSprite
-	jp sprite_init_anim
+	PushRomb bank("Ball_Sprites")
+	call sprite_init_anim
+	PopRomb
+	ret
 
 
 ; Get ball starting position (on the tee)
@@ -424,9 +426,8 @@ motion_step:
 
 	; change to 'going down' sprite
 	push de
-	ld hl, wBallSprite
 	ld de, anim_Ballder_rolling
-	call sprite_init_anim
+	call Ball_set_anim
 	ldh a, [hTick] ; "random" initial frame
 	ld [wBallSprite.frame], a
 	pop de
@@ -679,9 +680,10 @@ endr
 ; Draw main ball sprite
 ; @mut: AF, BC, DE, HL
 Ball_draw::
+	PushRomb bank("Ball_Sprites")
 	ld hl, wBallSprite
 	call sprite_update
-	ret z
+	jr z, .end
 	call oam_next_recall
 	ld a, [wBall.x + 1]
 	ld b, a
@@ -689,7 +691,8 @@ Ball_draw::
 	ld c, a
 	call Sprite_draw
 	call oam_next_store
-
+.end
+	PopRomb
 	ret
 
 

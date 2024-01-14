@@ -8,6 +8,7 @@ wEffect:
 	.timer: db
 	.x: db
 	.y: db
+	.sprite_romb0: db
 	.sprite: dw
 
 
@@ -29,10 +30,12 @@ Effects_update::
 	ret
 
 
+; @param A: sprite romb0
 ; @param B,C: X,Y position
 ; @param DE: sprite parts
 Effects_spawn_flicker_out::
 	; TODO: get next available effect instance?
+	ld [wEffect.sprite_romb0], a
 	ld hl, wEffect
 	ld a, 8
 	ld [hl+], a
@@ -40,6 +43,7 @@ Effects_spawn_flicker_out::
 	ld [hl+], a
 	ld a, c
 	ld [hl+], a
+	inc hl ; already wrote romb0
 	ld a, e
 	ld [hl+], a
 	ld a, d
@@ -69,6 +73,7 @@ Effects_draw_flicker_out:
 	ld b, a
 	ld a, [hl+] ; y
 	ld c, a
+	PushRomb [hl+] ; sprite_romb0
 	ld a, [hl+] ; sprite.0
 	ld e, a
 	ld a, [hl+] ; sprite.1
@@ -76,4 +81,5 @@ Effects_draw_flicker_out:
 	call oam_next_recall
 	call Sprite_draw
 	call oam_next_store
+	PopRomb
 	ret

@@ -45,6 +45,7 @@ _shot_done_enter:
 	ld e, a
 	ld a, [hl+]
 	ld d, a
+	ld a, bank("Ball_Sprites")
 	call Effects_spawn_flicker_out
 
 	call Ball_reset

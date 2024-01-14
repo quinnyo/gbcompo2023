@@ -213,8 +213,7 @@ sound_try_play::
 sound_play::
 	call sound_stop
 sound_force_play:
-	; TODO: ? swap ROM bank (push bank("Sounds"))
-
+	PushRomb bank("Sounds")
 	ldh a, [hAudioStatus]
 	set AUDIO_STATB_SOUND, a
 	ldh [hAudioStatus], a
@@ -230,12 +229,14 @@ sound_force_play:
 .setRegs:
 	ld a, [hl+]
 	and a
-	; TODO: ? swap ROM bank back (pop) if done
-	ret z
+	jr z, .end
 	ld c, a
 	ld a, [hl+]
 	ldh [c], a
 	jr .setRegs
+.end
+	PopRomb
+	ret
 
 
 ; Play a sound after a delay period.

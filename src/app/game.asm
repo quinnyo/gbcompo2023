@@ -77,11 +77,9 @@ Game::
 	ld [hl+], a
 	ld [hl], high(_Game_on_shot_event)
 
-	call BallPile_setup
 	call shotctl_get_shot_count
 	ld d, a
-	call BallPile_set
-	call BallPile_draw
+	call BallPile_setup
 
 	call musctl_stop
 

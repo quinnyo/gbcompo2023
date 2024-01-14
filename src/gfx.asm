@@ -416,17 +416,20 @@ default_font:
 LoadoPrg_LoadGameObj:
 	db LOADOCODE_CHRB_0
 
+	LoadocodeROMB "res/shapes.2bpp"
 	db LOADOCODE_SRC
 	dw res_shapes_2bpp
 	db LOADOCODE_DEST_CHR, tShapes
 	db LOADOCODE_CHRCOPY, tShapes_count
 
+	LoadocodeROMB "res/ball.2bpp"
 	db LOADOCODE_SRC
 	dw res_ball_2bpp
 	db LOADOCODE_SRC_CHR, 0
 	db LOADOCODE_DEST_CHR, tBall
 	db LOADOCODE_CHRCOPY, tBall_count
 
+	LoadocodeROMB "res/ballder_rolling.2bpp"
 	db LOADOCODE_SRC
 	dw res_ballder_rolling_2bpp
 	db LOADOCODE_SRC_CHR, 0

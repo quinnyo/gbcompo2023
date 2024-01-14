@@ -18,6 +18,12 @@ section "World State", wram0
 wNextChunk: dw
 
 section "World Impl", rom0
+World_default:
+	.xmin: db 4
+	.ymin: db 4
+	.xmax: db SCRN_X + 4
+	.ymax: db SCRN_Y + 4
+.end
 
 world_init::
 	ZeroSection "World State"
@@ -371,12 +377,3 @@ world_display_tilemap::
 	jr nz, .loop_y
 
 	ret
-
-
-section "World Data", romx
-World_default:
-	.xmin: db 4
-	.ymin: db 4
-	.xmax: db SCRN_X + 4
-	.ymax: db SCRN_Y + 4
-.end

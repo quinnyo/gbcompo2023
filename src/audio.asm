@@ -426,6 +426,8 @@ section "Audio Resource Tables", rom0
 
 include "mus.inc"
 
+	MusicReg mus01, mus99, mus_stepon
+
 music_table::
 	MusicTableBuild
 

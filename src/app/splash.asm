@@ -1,6 +1,5 @@
 include "common.inc"
 include "input.inc"
-include "mus.inc"
 
 section "Splash", rom0
 Splash::

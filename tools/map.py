@@ -156,19 +156,27 @@ class TileTracker:
         return lines
 
 
-class LegacyThingDef:
+class ThingDef:
+    def get_def_id(self) -> int:
+        raise NotImplementedError
+
+    def get_def_label(self) -> str:
+        keyword = self.get_def_id()
+        return f".thing{self.get_def_id():x}"
+
+    def get_asm(self) -> [str]:
+        raise NotImplementedError
+
+
+class LegacyThingDef(ThingDef):
     def __init__(self, chr_code: int, oam_attr: int):
         self.chr_code: int = chr_code
         self.oam_attr: int = oam_attr
 
     def get_def_id(self) -> int:
-        import ctypes
         h = hash(f"LegacyThingDef{self.chr_code}{self.oam_attr}howdopython?")
-        return ctypes.c_ulong(h).value
-
-    def get_def_label(self) -> str:
-        keyword = self.get_def_id()
-        return f".thing{keyword:x}"
+        from ctypes import c_ulong
+        return c_ulong(h).value
 
     def get_asm(self) -> [str]:
         return [
@@ -178,11 +186,11 @@ class LegacyThingDef:
 
 
 class ThingPlacement:
-    def __init__(self, pos_x: int, pos_y: int, tag: int, thing_def):
+    def __init__(self, pos_x: int, pos_y: int, tag: int, thing_def: ThingDef):
         self.pos_x: int = pos_x
         self.pos_y: int = pos_y
         self.tag: int = tag
-        self.thing_def: int = thing_def
+        self.thing_def: ThingDef = thing_def
 
     def get_asm(self) -> [str]:
         return [

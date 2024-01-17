@@ -324,18 +324,22 @@ endr
 
 
 gfx_load_default_font::
+	PushRomb bank(default_font)
 	ld hl, vFontTiles
 	ld de, default_font
-	ld bc, default_font.end - default_font
+	ld bc, ONEBIT_MONO_RES_SIZE
 	call vmem_copy_double
+	PopRomb
 	ret
 
 
 ; load tile data for game objects
 gfx_load_game_obj::
+	PushRomb bank(LoadoPrg_LoadGameObj)
 	ld de, LoadoPrg_LoadGameObj
 	call loado_load_program
 	call loado_exec
+	PopRomb
 	ret
 
 
@@ -352,6 +356,7 @@ gfx_load_default_palettes::
 	ldh [rOBP1], a
 
 	; CGB
+	PushRomb bank("Gfx/ColorPalettesDefault")
 	ld de, bcp_start
 	ld hl, wBCP_src
 	ld bc, DEFAULT_BCP_COUNT * 4 * 2
@@ -368,6 +373,7 @@ gfx_load_default_palettes::
 	ld hl, wOCP
 	ld bc, DEFAULT_OCP_COUNT * 4 * 2
 	call mem_copy
+	PopRomb
 
 	ld hl, wGfx.bcp_changed
 	ld a, $FF
@@ -397,11 +403,9 @@ gfx_bg_attr_fill::
 	ret
 
 
-section "GfxData", rom0
+section "GfxData", romx
 
-default_font:
-	incbin "res/onebit-mono.1bpp", 0, ONEBIT_MONO_RES_SIZE
-.end
+default_font: incbin "res/onebit-mono.1bpp", 0, ONEBIT_MONO_RES_SIZE
 
 
 	ShrimpIncbin "res/shapes.2bpp"
@@ -439,6 +443,8 @@ LoadoPrg_LoadGameObj:
 	db LOADOCODE_STOP
 
 
+section "Gfx/ColorPalettesDefault", romx
+
 def DEFAULT_OCP_COUNT equ 4
 def DEFAULT_BCP_COUNT equ 4
 
@@ -475,8 +481,7 @@ cpal_greybg:
 	ColorW 2, 2, 2
 
 
-pushs
-section "Fade5", rom0, align[4]
+section "Gfx/Fade5", rom0, align[4]
 ; Fade5
 ; 6 colours * 2 = 12 bytes ==> align to %----0000
 ; Aligned so each stage (t0, .. t5) can be accessed using a 4 bit offset with no overflow
@@ -493,7 +498,6 @@ Fade5:
 	ColorRRR %01111
 	.t5 ; full src
 	ColorRRR %11111
-pops
 
 
 ; Step Fade5 sequence 'in'

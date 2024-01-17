@@ -1,5 +1,4 @@
 include "common.inc"
-include "mus.inc"
 
 /*
 /------------------\
@@ -65,7 +64,7 @@ LevelSelect.init::
 	call LevelSelect_refresh2
 	call LevelSelect_draw
 
-	ld b, MUSIC_TRACK_MUS99_INDEX
+	ld b, MUSIC_TRACK_MUS_STEPON_INDEX
 	call musctl_play_next
 
 	ret

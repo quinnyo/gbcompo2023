@@ -66,7 +66,8 @@ def ThingsMax equ 16
 		stfield pos, 2      ; 2D position vector
 		stfield draw_mode
 		stfield drawable, 2
-		stfield on_die, w   ; jump to here when destroyed
+
+		stfield ev_die      ; event vector invoked when Thing destroyed
 	stclose
 
 
@@ -102,6 +103,19 @@ def fThingDrawMode__COUNT   rb 0
 
 ; The default tag
 def ThingTag_UNSET equ $FF
+
+
+; ThingEvec: Thing event handlers
+rsreset
+def ThingEvecEndpoint_THINGCODE rb 1 ; Evec endpoint is thingcode
+; def ThingEvecEndpoint_DISABLED  rb 1 ; Evec is unused/disabled
+def ThingEvecEndpoint__COUNT    rb 0 ; Number of ThingEvecEndpoint variants
+
+	stdecl ThingEvec
+		stfield config         ; Evec endpoint type / config / flags
+		stfield endpoint_bank  ; Endpoint bank
+		stfield endpoint, w    ; Endpoint address
+	stclose
 
 
 ; ThingMachine status flags
@@ -140,9 +154,28 @@ def tc_Instance       rb 1
 def tc_Position       rb 1
 def tc_DrawOAM        rb 1
 def tc_DrawSprite     rb 1
-def tc_DieGoto        rb 1
+; tc_EvecDie ThingEvec
+; Set the 'die' event vector.
+def tc_EvecDie        rb 1
 
 def tc__COUNT         rb 0 ; Number of instructions
+def tc__ALL_NAMES equs "New, Save, Stop, CollideNone, CollideTile, CollideBox, Hits, Tag, Goto, Instance, Position, DrawOAM, DrawSprite, EvecDie"
+
+; BuildJumpTable CODE_PFX, IMPL_PFX, OP_NAMES
+; Build jump table mapping {CODE_PFX}OP to {IMPL_PFX}OP.
+; Verifies that table is contiguous (no gaps between CODES).
+macro _BuildJumpTable
+	def _code_pfx equs "\1"
+	shift
+	def _impl_pfx equs "\1"
+	shift
+	for i, _NARG
+		assert {_code_pfx}\1 == i
+		dw {_impl_pfx}\1
+		shift
+	endr
+	purge _code_pfx, _impl_pfx
+endm
 
 
 ; Thingcode helper macros
@@ -233,9 +266,14 @@ macro ThingcDrawSprite
 endm
 
 
-macro ThingcDieGoto
+macro ThingcEvecDie
 	assert fatal, _NARG == 1
-	db tc_DieGoto
+	db tc_EvecDie
+	if strcmp("\1", "0") == 0
+		db $FF, 0
+	else
+		db 0, bank(\1)
+	endc
 	dw (\1)
 endm
 
@@ -254,18 +292,17 @@ macro DefThingLegacy
 	ThingcDrawOAM (\1), (\2)
 	ThingcCollideTile
 	ThingcHits 1
-	ThingcDieGoto .state1\@
+	ThingcEvecDie .state1\@
 	ThingcSave
 	ThingcStop
 .state1\@:
 	ThingcDrawOAM (\1) + 1, (\2)
-	ThingcHits 1
-	ThingcDieGoto .state2\@
+	ThingcHits 2
+	ThingcEvecDie .state2\@
 	ThingcSave
 	ThingcStop
 .state2\@:
 	ThingcDrawOAM (\1) + 2, (\2)
-	ThingcDieGoto 0
 	ThingcSave
 	ThingcStop
 endm

@@ -158,23 +158,7 @@ tcm_step::
 	ld a, b
 	add a ; double instruction -> table offset
 	rst jump_switch
-	; tc0
-	dw _tcx_New
-	dw _tcx_Save
-	dw _tcx_Stop
-	dw _tcx_CollideNone
-	dw _tcx_CollideTile
-	dw _tcx_CollideBox
-	; tc1
-	dw _tcx_Hits
-	dw _tcx_Tag
-	; tc2
-	dw _tcx_Goto
-	dw _tcx_Instance
-	dw _tcx_Position
-	dw _tcx_DrawOAM
-	dw _tcx_DrawSprite
-	dw _tcx_DieGoto
+	_BuildJumpTable tc_, _tcx_, {tc__ALL_NAMES}
 
 .err
 	di
@@ -364,10 +348,37 @@ _tcx_DrawSprite::
 	ret
 
 
-; @param DE: address of program
-_tcx_DieGoto::
-	ld hl, wThingCache.on_die
-	ld a, e
+; NOTE: advances program counter by +2
+; @param E: evec cfg
+; @param D: evec srcb
+_tcx_EvecDie::
+	ld hl, wThingMachine.prg
+	ld a, [hl+]
+	ld h, [hl]
+	ld l, a
+	ld a, [hl+] ; src.0
+	ld c, a
+	ld a, [hl+] ; src.1
+	ld b, a
+	push bc                       ; push src*
+	call tcm_jump
+
+	ld a, [wThingCache.ev_die]
+	call Things_get_evec
+	jr c, :+
+	; doesn't exist, create new
+	call Things_create_evec
+	ld a, b
+	ld [wThingCache.ev_die], a
+:
+
+	ld a, e     ; cfg
 	ld [hl+], a
-	ld [hl], d
+	ld a, d     ; srcb
+	ld [hl+], a
+	pop bc                       ; pop src*
+	ld a, c     ; src.0
+	ld [hl+], a
+	ld a, b     ; src.1
+	ld [hl+], a
 	ret

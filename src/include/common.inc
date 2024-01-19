@@ -133,7 +133,7 @@ endm
 
 
 ; PushRomb BANK
-; Pushes current ROMB to the stack before switching to the bank in A.
+; Pushes current ROMB to the stack before switching to the bank BANK.
 ; @param BANK: fragment to `ld` rom bank number from (i.e. `ld a, {BANK}` will be emitted)
 ; @mut: AF
 macro PushRomb
@@ -154,6 +154,28 @@ macro PopRomb
 	rst rom_sel
 endm
 
+
+; PushWramb BANK
+; Pushes current WRAM bank (SVBK) to the stack before switching to the bank BANK.
+; @param BANK: fragment to `ld` rom bank number from (i.e. `ld a, {BANK}` will be emitted)
+; @mut: AF
+macro PushWramb
+	assert _NARG == 1
+	ldh a, [rSVBK]
+	push af
+	ld a, \1
+	ldh [rSVBK], a
+endm
+
+
+; PopWramb
+; Pop the WRAM bank from the stack and switch to it.
+; @mut: AF
+macro PopWramb
+	assert _NARG == 0
+	pop af
+	ldh [rSVBK], a
+endm
 
 
 /***********************************************************

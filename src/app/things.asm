@@ -3,6 +3,8 @@ include "app/world.inc"
 include "gfxmap.inc"
 
 def THINGS_BUFFER_SIZE equ Thing_sz * ThingsMax
+def THINGS_EVECS_MAX equ 64 ; Unit capacity of evec buffer
+def THINGS_EVEC_BUFFER_SIZE equ THINGS_EVECS_MAX * ThingEvec_sz
 
 section "ThingsState", wram0
 wThingsInfo::
@@ -13,6 +15,9 @@ wThingsInfo::
 	.next:       dw ; pointer to end of wThings array
 
 wThings: ds THINGS_BUFFER_SIZE
+
+wThings_evecs: ds THINGS_EVEC_BUFFER_SIZE
+wThings_evecs_count: db
 
 section "ThingCache", hram
 hThingCache:
@@ -29,11 +34,8 @@ section "ThingsImpl", rom0
 ; @mut: AF, HL
 Thing_init::
 	ld [hl+], a ; status
-	ld c, Thing_drawable - (Thing_status + 1)
+	ld c, Thing_sz - 1
 	ld a, $FF
-	call mem_fill_byte
-	ld c, Thing_sz - Thing_drawable
-	xor a
 	call mem_fill_byte
 	ret
 
@@ -55,6 +57,13 @@ things_init::
 	ld bc, THINGS_BUFFER_SIZE
 	ld d, fThingStatus_VOID
 	call mem_fill
+
+	ld hl, wThings_evecs
+	ld bc, THINGS_EVEC_BUFFER_SIZE
+	ld d, 0
+	call mem_fill
+	xor a
+	ld [wThings_evecs_count], a
 
 	ret
 
@@ -182,6 +191,7 @@ things_think::
 	inc d
 	res bThingStatus_TARGET, a
 .target_done
+	ld [hl], a ; save status before _Thing_die/ev_die
 
 	inc b             ; just_died++
 	push af
@@ -193,6 +203,9 @@ things_think::
 	pop de
 	pop bc
 	pop af
+
+	; NOTE: Thing might have changed! (in _Thing_die/ev_die)
+	ld a, [hl] ; reload status
 .ev_die_done
 
 	bit bThingStatus_EV_HIT, a
@@ -234,28 +247,30 @@ _Thing_die:
 	ld e, l
 	ld d, h
 
-	ld a, Thing_on_die
+	ld a, Thing_ev_die
 	add l
 	ld l, a
 	adc h
 	sub l
 	ld h, a
+	ld a, [hl]
+	call Things_get_evec
+	ret nc
 
-	ld a, [hl+]
+	ld a, [hl+] ; cfg
+	cp ThingEvecEndpoint_THINGCODE ; the only type for now
+	ret nz
+.endpt_thingcode
+	PushRomb [hl+] ; srcb
+	ld a, [hl+] ; src.0
 	ld c, a
-	ld a, [hl+]
+	ld a, [hl+] ; src.1
 	ld b, a
-
-	or c
-	ret z
-
 	call tcm_load_program
-
 	call tcm_set_thing_de
 	call tcm_update_cache
-
 	call tcm_run
-
+	PopRomb
 	ret
 
 
@@ -279,17 +294,24 @@ endr
 	ld c, a
 	ld a, [hl+]    ; .draw_mode
 	cp fThingDrawMode_Sprite
-	; NOTE: preserving flags from CP above -- LD only
+	jr z, .draw_mode_sprite
+	cp fThingDrawMode_OAM
+	jr z, .draw_mode_oam
+	jr .draw_mode_none
+.draw_mode_sprite
 	ld a, [hl+]
 	ld e, a
 	ld a, [hl+]
 	ld d, a
 	call oam_next_recall
-	jr nz, .draw_mode_oam
-.draw_mode_sprite
 	call Sprite_draw
 	jr .draw_end
 .draw_mode_oam
+	ld a, [hl+]
+	ld e, a
+	ld a, [hl+]
+	ld d, a
+	call oam_next_recall
 	ld a, c
 	add OAM_Y_OFS
 	ld [hl+], a ; y
@@ -302,6 +324,7 @@ endr
 	ld [hl+], a ; attr
 .draw_end
 	call oam_next_store
+.draw_mode_none
 	pop hl         ; HL <= Thing*
 .skip
 	ld a, Thing_sz
@@ -350,16 +373,16 @@ endr
 	cp %01
 	jr nz, .loop_things_continue
 .handle_hit ; Thing has been hit
+	set bThingStatus_EV_HIT, d
 	ld a, [bc]                    ; status
-	set bThingStatus_EV_HIT, a
-	and fThingStatus_HITS ; just hits
+	and fThingStatus_HITS         ; A <= HP only
 	jr z, .handle_hit_done
-	dec a                 ; hits--
+	dec a                         ; HP--
 	jr nz, .handle_hit_done
 	; Thing has been killed
-	set bThingStatus_EV_DIE, a
+	set bThingStatus_EV_DIE, d
 .handle_hit_done
-	; recombine HP (A) with status flags (D)
+	; recombine HP (A) with status / events (D)
 	or d
 	ld [bc], a
 .loop_things_continue
@@ -373,6 +396,38 @@ endr
 	dec e
 	jr nz, .loop_things
 	ret
+
+
+; @param A: evec index
+; @return HL: pointer to evec
+; @return F.C: set if index is valid
+; @mut: AF, HL
+Things_get_evec::
+	cp THINGS_EVECS_MAX
+	ret nc
+	assert ThingEvec_sz == 4
+	add a
+	add a
+	ld hl, wThings_evecs
+	add l
+	ld l, a
+	adc h
+	sub l
+	ld h, a
+	scf ; return F.C on success
+	ret
+
+
+; @return B: evec index
+; @return HL: pointer to evec
+; @return F.C: set if index is valid
+; @mut: AF, HL
+Things_create_evec::
+	ld hl, wThings_evecs_count
+	ld a, [hl]
+	inc [hl]
+	ld b, a
+	jr Things_get_evec
 
 
 ; Find the first Thing with a tag matching the provided value.

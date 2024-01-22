@@ -223,14 +223,15 @@ end
 
 ThingStruct = {
   status = 1,
+  tag = 1,
   collider = 1,
   pos = 2,
   draw_mode = 1,
   drawable = 2,
-  on_die = "w",
+  ev_die = 1,
 }
 
-ThingFields = { "index", "addr", "void", "target", "hits", "collider", "position", "drawable", }
+ThingFields = { "index", "addr", "void", "target", "hits", "tag", "collider", "position", "drawable", }
 
 ThingFieldFormatters = {
   index = function(t)
@@ -247,6 +248,9 @@ ThingFieldFormatters = {
   end,
   hits = function(t)
     return t.status.hits > 0 and string.format("+%d", t.status.hits) or "**"
+  end,
+  tag = function(t)
+    return string.format("%02X", t.tag)
   end,
   collider = function(t)
     return string.format("C:%X", t.collider)
@@ -284,15 +288,16 @@ function ThingRead(index, addr, memType)
     addr = addr,
   }
   thing.status = ThingDecodeStatus(emu.read(addr + 0, memType))
-  thing.collider = emu.read(addr + 1, memType)
-  local x = emu.read(addr + 2, memType)
-  local y = emu.read(addr + 3, memType)
+  thing.tag = emu.read(addr + 1, memType)
+  thing.collider = emu.read(addr + 2, memType)
+  local x = emu.read(addr + 3, memType)
+  local y = emu.read(addr + 4, memType)
   thing.pos = Vec2(x, y)
-  thing.draw_mode = emu.read(addr + 4, memType)
-  local drawable0 = emu.read(addr + 5, memType)
-  local drawable1 = emu.read(addr + 6, memType)
+  thing.draw_mode = emu.read(addr + 5, memType)
+  local drawable0 = emu.read(addr + 6, memType)
+  local drawable1 = emu.read(addr + 7, memType)
   thing.drawable = { drawable0, drawable1 }
-  thing.on_die = emu.readWord(addr + 7, memType)
+  thing.ev_die = emu.read(addr + 8, memType)
 
   thing.format = function(t, fmt)
     local s = fmt
@@ -480,10 +485,11 @@ MainMode = {
   Game = 1,
   LevelSelect = 2,
   SoundTest = 3,
+  Ending = 4,
 }
 
 function GetMainMode()
-  local wMode = emu.getLabelAddress("wMode")
+  local wMode = emu.getLabelAddress("wMode_current")
   if wMode then
     return emu.read(wMode.address, wMode.memType)
   end

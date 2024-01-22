@@ -41,7 +41,7 @@ EV_DIE      ( 6, 1 )
 	was reduced to zero -- HITS was more than 0 when the hit was detected.
 	The flag is otherwise cleared every tick.
 VOID        ( 7, 1 )
-	When set, the Thing is ignored/disabled. Things are stored in a 
+	When set, the Thing is ignored/disabled. Things are stored in a
 	contiguous array and VOID is used to have "empty" slots.
 
 
@@ -97,6 +97,7 @@ rsreset
 def fThingDrawMode_OAM      rb 1 ; Drawable is OAM object { CHR, ATTR }
 def fThingDrawMode_Sprite   rb 1 ; Drawable is pointer to Sprite
 def fThingDrawMode__COUNT   rb 0
+def fThingDrawMode_None     equ fThingDrawMode__COUNT
 
 
 ; Thing.tag
@@ -145,6 +146,7 @@ def tc_Stop           rb 1
 def tc_CollideNone    rb 1
 def tc_CollideTile    rb 1
 def tc_CollideBox     rb 1
+def tc_DrawNone       rb 1
 def tc1               rb 0
 def tc_Hits           rb 1
 def tc_Tag            rb 1
@@ -159,7 +161,7 @@ def tc_DrawSprite     rb 1
 def tc_EvecDie        rb 1
 
 def tc__COUNT         rb 0 ; Number of instructions
-def tc__ALL_NAMES equs "New, Save, Stop, CollideNone, CollideTile, CollideBox, Hits, Tag, Goto, Instance, Position, DrawOAM, DrawSprite, EvecDie"
+def tc__ALL_NAMES equs "New, Save, Stop, CollideNone, CollideTile, CollideBox, DrawNone, Hits, Tag, Goto, Instance, Position, DrawOAM, DrawSprite, EvecDie"
 
 ; BuildJumpTable CODE_PFX, IMPL_PFX, OP_NAMES
 ; Build jump table mapping {CODE_PFX}OP to {IMPL_PFX}OP.
@@ -246,6 +248,12 @@ endm
 macro ThingcCollideBox
 	assert fatal, _NARG == 4
 	db tc_CollideBox, \#
+endm
+
+
+macro ThingcDrawNone
+	assert fatal, _NARG == 0
+	db tc_DrawNone
 endm
 
 

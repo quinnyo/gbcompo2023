@@ -250,6 +250,16 @@ _tcx_CollideBox::
 	jr tcm_jump
 
 
+_tcx_DrawNone::
+	ld hl, wThingCache.draw_mode
+	ld a, fThingDrawMode_None
+	ld [hl+], a       ; draw_mode
+	ld a, $FF
+	ld [hl+], a       ; drawable.0
+	ld [hl+], a       ; drawable.1
+	ret
+
+
 ; @param D: new HITS value
 _tcx_Hits::
 	ld hl, wThingCache.status

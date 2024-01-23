@@ -82,7 +82,7 @@ class MapConvert:
                 else:
                     logwarn("Non-polyline heightmap contour object found.")
             elif isinstance(obj, tiled_object.Tile):
-                self.things.add_tile(obj)
+                self.things.add_tile(obj, self.tile_tracker)
 
     def process_tile_layer(self, layer: TileLayer):
         if not layer.visible:

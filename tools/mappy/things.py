@@ -6,7 +6,7 @@ import attrs
 
 from pytiled_parser import tiled_object
 
-from .common import Vec2i
+from .common import Vec2i, Rect2i
 from .tiles import TileTracker, gid_to_oam_attr
 
 
@@ -107,6 +107,12 @@ class CollideBox(ThingParam):
         l, r = self.x, self.x + self.w
         t, b = self.y, self.y + self.h
         return f"ThingcCollideBox {l}, {r}, {t}, {b}"
+
+    @classmethod
+    def from_rect(cls, rect: Rect2i):
+        x, y = rect.pos
+        w, h = rect.size
+        return cls(x, y, w, h)
 
 
 @define(frozen=True)
@@ -217,6 +223,13 @@ class ThingTile:
     position: Vec2i
     obid: int
     parentobid: int = None
+    shapes: List[Rect2i] = []
+
+    def get_collider(self):
+        if len(self.shapes) > 0 and self.shapes[0]:
+            return CollideBox.from_rect(self.shapes[0])
+        else:
+            return CollideTile()
 
     @classmethod
     def from_tile_obj(cls, obj: tiled_object.Tile):
@@ -265,8 +278,11 @@ class Things:
         # map ThingTile obids (src object) to placement tags
         self.obid_tag_map = {}
 
-    def add_tile(self, obj: tiled_object.Tile):
+    def add_tile(self, obj: tiled_object.Tile, tile_tracker: TileTracker):
         tile = ThingTile.from_tile_obj(obj)
+        source = tile_tracker.require_gid_source(obj.gid)
+        tile.shapes = source.get_tile_collision_shapes(
+            source.to_local_id(obj.gid))
         self.tiles.append(tile)
 
     def add_state_def(self, params: ThingStateParams) -> ThingStateDef:
@@ -363,7 +379,7 @@ class Things:
                         tile_tracker.obj.gid_to_chr(gid0),
                         oam_attr
                     ),
-                    collider=CollideTile(),
+                    collider=tile.get_collider(),
                     hits=Hits(1),
                     ev_die=EvecDie(dam1)
                 )
@@ -399,7 +415,7 @@ class Things:
                         tile_tracker.obj.gid_to_chr(gid0),
                         gid_to_oam_attr(gid0)
                     ),
-                    collider=CollideTile(),
+                    collider=tile.get_collider(),
                     hits=Hits(1),
                     ev_die=EvecDie(basedam1)
                 )
@@ -429,7 +445,7 @@ class Things:
                         tile_tracker.obj.gid_to_chr(tile.gid),
                         gid_to_oam_attr(tile.gid)
                     ),
-                    collider=CollideTile(),
+                    collider=tile.get_collider(),
                     hits=Hits(1),
                     ev_die=EvecDie(dam1)
                 )

@@ -1,7 +1,10 @@
+from typing import List
 from pathlib import Path
 from bisect import insort, bisect_left
 
 from pytiled_parser.tiled_map import TiledMap, Tileset
+
+from .common import Vec2i, Rect2i
 
 
 MASK_GID             = 0x0fffffff
@@ -69,6 +72,24 @@ class TileSource:
 
     def get_res_label(self) -> str:
         return str(self.get_res_path()).replace("/", "_").replace(".", "_")
+
+    def get_tile_collision_shapes(self, lid: int) -> List[Rect2i]:
+        from pytiled_parser.tiled_object import TiledObject
+        if self.tileset.tiles is None:
+            return []
+        tile = self.tileset.tiles[lid]
+        if not tile.objects or not tile.objects.visible:
+            return []
+        shapes = []
+        if tile.objects and tile.objects.visible:
+            for ob in tile.objects.tiled_objects:
+                if ob.visible and ob.class_ == "CollisionShape":
+                    if isinstance(ob, TiledObject):
+                        x, y = ob.coordinates
+                        w, h = ob.size
+                        shapes.append(Rect2i(Vec2i.new(x, y), Vec2i.new(w, h)))
+
+        return shapes
 
 
 class MapTileset:

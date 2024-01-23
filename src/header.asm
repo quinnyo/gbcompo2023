@@ -185,13 +185,12 @@ Main_mode_change::
 	call oam_clear
 	ld d, 0
 	call gfx_bg_attr_fill
-	call Mode_init
-
-	ei
+	; set standard fade in before Mode_init (so mode can override it)
 	ld a, 1
 	call gfx_fade_in
+	call Mode_init
 
-	ret
+	reti
 
 
 wait_vblank::

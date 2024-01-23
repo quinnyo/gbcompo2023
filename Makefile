@@ -138,7 +138,7 @@ res/%.scrn: tools/scrn.sh res/%.png
 	@$(MKDIR_P) $(@D)
 	$^ $@
 
-res/map/%.asm: res/map/%.tmx tools/map.py
+res/map/%.asm: res/map/%.tmx tools/map.py $(wildcard tools/mappy/*.py)
 	@$(MKDIR_P) $(@D)
 	$(MAPPY) -o $@ $<
 

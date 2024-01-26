@@ -2,10 +2,12 @@ include "app/things.inc"
 
 section "std_rules", rom0
 
+
+; Propagate destruction to subthings.
 ; @param C: dataLen
 ; @param DE: &data
 ; @mut: AF, BC, DE, HL
-rule_multithing::
+rule_subthings::
 	ld a, 1
 	cp c
 	ret nc

@@ -207,7 +207,7 @@ class MapConvert:
             rules_lines = [
                 "\tdb MapChunk_Rule",
                 f"\tdb {rule_type}, {rule_data_len}",
-                "\tdw rule_multithing",
+                "\tdw rule_subthings",
                 f"\tdb {rule_str_bytes}",
             ]
 

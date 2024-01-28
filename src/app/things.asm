@@ -164,20 +164,28 @@ endr
 	ret
 
 
-; Main Thing per-tick process routine.
+; Start the per-tick update, check collisions and prepare changes.
 ; @mut: AF, BC, DE, HL
-things_think::
+things_think_prepare::
+	; reset per-tick stats
+	xor a
+	ld [wThingsInfo.just_hit], a
+	ld [wThingsInfo.just_died], a
+
+	jp _things_process_collisions
+
+
+; Finish the per-tick update, apply queued changes to things.
+; @mut: AF, BC, DE, HL
+things_think_finalise::
 	ld a, [wThingsInfo.count]
 	and a
 	ret z
-
-	call _things_process_collisions
+	ld e, a
 
 	ld bc, 0 ; count things died (B), things hit (C)
 	ld d, 0 ; count targets destroyed
 	ld hl, wThings
-	ld a, [wThingsInfo.count]
-	ld e, a
 .loop_things
 	ld a, [hl]        ; status
 	bit bThingStatus_VOID, a

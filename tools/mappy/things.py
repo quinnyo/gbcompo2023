@@ -218,13 +218,20 @@ class ThingStateDef(ThingDef):
 
 
 @define
+class MetaThing:
+    position: Vec2i
+    obid: int
+    parts: list[int] = attrs.Factory(list)
+
+
+@define
 class ThingTile:
     gid: int
     position: Vec2i
     obid: int
     parentobid: int = None
-    shapes: List[Rect2i] = []
-    damaged_offsets: List[int] = []
+    shapes: list[Rect2i] = attrs.Factory(list)
+    damaged_offsets: list[int] = attrs.Factory(list)
 
     def get_collider(self):
         if len(self.shapes) > 0 and self.shapes[0]:
@@ -250,6 +257,7 @@ class ThingTile:
 
 class Things:
     def __init__(self):
+        self.meta_things = {}
         self.tiles = []
         self.thing_defs = {}
         self.thing_placements = []
@@ -257,6 +265,13 @@ class Things:
         self.unresolved_parents = []
         # map ThingTile obids (src object) to placement tags
         self.obid_tag_map = {}
+
+    def add_meta_thing(self, obj: tiled_object.TiledObject):
+        mt = MetaThing(
+            position=Vec2i.new(obj.coordinates.x, obj.coordinates.y - 8),
+            obid=obj.id,
+        )
+        self.meta_things[obj.id] = mt
 
     def add_tile(self, obj: tiled_object.Tile, tile_tracker: TileTracker):
         tile = ThingTile.from_tile_obj(obj)
@@ -279,17 +294,20 @@ class Things:
     def place(self,
               pos: Vec2i,
               td: ThingDef,
-              src_obj: ThingTile) -> int:
+              src_obid: int) -> int:
         tag = len(self.thing_placements)
         placem = ThingPlacement(pos.x, pos.y, tag, td)
         self.thing_placements.append(placem)
-        self.obid_tag_map[src_obj.obid] = tag
+        self.obid_tag_map[src_obid] = tag
         return tag
 
     def process(self, tile_tracker: TileTracker):
         for tile in self.tiles:
             if tile.parentobid:
-                self.unresolved_parents.append((tile.parentobid, tile.obid))
+                if tile.parentobid in self.meta_things:
+                    self.meta_things[tile.parentobid].parts.append(tile.obid)
+                else:
+                    self.unresolved_parents.append((tile.parentobid, tile.obid))
 
         # Collect required tiles
         for tile in self.tiles:
@@ -351,7 +369,7 @@ class Things:
                     ev_die=EvecDie(td) if td else None
                 )
             )
-        self.place(tile.position, td, tile)
+        self.place(tile.position, td, tile.obid)
 
     def get_subthing_pairs(self) -> List[Tuple[int, int]]:
         """
@@ -360,10 +378,18 @@ class Things:
         """
         pairs: List[Tuple[int, int]] = []
         for parentobid, childobid in self.unresolved_parents:
-            parent_tag = self.obid_tag_map.get(parentobid, None)
-            child_tag = self.obid_tag_map.get(childobid, None)
-            pairs.append((parent_tag, child_tag))
+            if parentobid in self.obid_tag_map:
+                parent_tag = self.obid_tag_map[parentobid]
+                child_tag = self.obid_tag_map.get(childobid, None)
+                pairs.append((parent_tag, child_tag))
         return pairs
+
+    def get_meta_things(self) -> List[Tuple[MetaThing, List[int]]]:
+        groups = []
+        for mt in self.meta_things.values():
+            tags = [self.obid_tag_map[obid] for obid in mt.parts]
+            groups.append((mt, tags))
+        return groups
 
     def get_defs_asm(self) -> [str]:
         if len(self.thing_defs) == 0:

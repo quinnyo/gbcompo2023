@@ -15,6 +15,8 @@ wPOOL_END: dw
 
 wITER_NEXT: dw
 
+wRulesScratch:: ds RULES_SCRATCH_BUFFER_SIZE
+
 section "RulesManager", rom0
 ; Clear the rules buffer
 ; @mut: AF, BC, D, HL

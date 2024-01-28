@@ -165,9 +165,10 @@ _Game_update:
 	ld e, BallCollideThingRadius
 	call Collide_set_subject_missile
 	call Collide_all_subject
-	call Rules_tick
 	; update things
-	call things_think
+	call things_think_prepare
+	call Rules_tick
+	call things_think_finalise
 	ld a, [wThingsInfo.just_died]
 	and a
 	jr z, .things_done

@@ -83,6 +83,8 @@ class MapConvert:
                     logwarn("Non-polyline heightmap contour object found.")
             elif isinstance(obj, tiled_object.Tile):
                 self.things.add_tile(obj, self.tile_tracker)
+            elif isinstance(obj, tiled_object.TiledObject) and obj.class_ == "MetaThing":
+                self.things.add_meta_thing(obj)
 
     def process_tile_layer(self, layer: TileLayer):
         if not layer.visible:
@@ -193,12 +195,25 @@ class MapConvert:
             builder.append_chunk_text("\n".join(things_lines))
 
         # Rules
-        multithings = {}
+        for _mt, parts in self.things.get_meta_things():
+            rule_data_len = len(parts)
+            assert rule_data_len < 256
+            rule_type = 0
+            rule_str_bytes = ", ".join((f"{x}" for x in parts))
+            rules_lines = [
+                "\tdb MapChunk_Rule",
+                f"\tdb {rule_type}, {rule_data_len}",
+                "\tdw rule_multithing",
+                f"\tdb {rule_str_bytes}",
+            ]
+            builder.append_chunk_text("\n".join(rules_lines))
+
+        subthings = {}
         for parent, child in self.things.get_subthing_pairs():
-            if parent not in multithings:
-                multithings[parent] = []
-            multithings[parent].append(child)
-        for parent, children in multithings.items():
+            if parent not in subthings:
+                subthings[parent] = []
+            subthings[parent].append(child)
+        for parent, children in subthings.items():
             rule_data_len = len(children) + 1
             assert rule_data_len < 256
             rule_type = 0
@@ -207,10 +222,9 @@ class MapConvert:
             rules_lines = [
                 "\tdb MapChunk_Rule",
                 f"\tdb {rule_type}, {rule_data_len}",
-                "\tdw rule_multithing",
+                "\tdw rule_subthings",
                 f"\tdb {rule_str_bytes}",
             ]
-
             builder.append_chunk_text("\n".join(rules_lines))
 
         # End

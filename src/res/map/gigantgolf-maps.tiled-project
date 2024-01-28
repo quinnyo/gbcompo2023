@@ -11,8 +11,8 @@
     ],
     "propertyTypes": [
         {
-            "color": "#ffd09ec8",
-            "drawFill": true,
+            "color": "#ff33bfe6",
+            "drawFill": false,
             "id": 5,
             "members": [
             ],
@@ -24,7 +24,27 @@
             ]
         },
         {
-            "color": "#ffe1d662",
+            "color": "#ffeb853c",
+            "drawFill": true,
+            "id": 8,
+            "members": [
+            ],
+            "name": "MetaThing",
+            "type": "class",
+            "useAs": [
+                "property",
+                "map",
+                "layer",
+                "object",
+                "tile",
+                "tileset",
+                "wangcolor",
+                "wangset",
+                "project"
+            ]
+        },
+        {
+            "color": "#ffffd863",
             "drawFill": true,
             "id": 6,
             "members": [

@@ -48,6 +48,7 @@ def gid_to_oam_attr(gid: int) -> int:
 
 class TileSource:
     def __init__(self, tileset: Tileset):
+        assert isinstance(tileset, Tileset)
         self.tileset: Tileset = tileset
 
     def to_local_id(self, gid: int) -> int:
@@ -88,8 +89,32 @@ class TileSource:
                         x, y = ob.coordinates
                         w, h = ob.size
                         shapes.append(Rect2i(Vec2i.new(x, y), Vec2i.new(w, h)))
-
         return shapes
+
+    def get_tile(self, lid: int):
+        assert self.tileset
+        assert self.tileset.tiles and lid in self.tileset.tiles
+        return self.tileset.tiles[lid]
+
+    def get_tileset_property(self, key: str, convert=None, default=None):
+        assert self.tileset
+        if self.tileset.properties and key in self.tileset.properties:
+            value = self.tileset.properties[key]
+            return convert(value) if convert else value
+        return default
+
+    def get_tile_property(
+        self,
+        lid: int,
+        key: str,
+        convert=None,
+        default=None
+    ):
+        tile = self.get_tile(lid)
+        if tile.properties and key in tile.properties:
+            value = tile.properties[key]
+            return convert(value) if convert else value
+        return default
 
 
 class MapTileset:

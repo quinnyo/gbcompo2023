@@ -218,12 +218,20 @@ class ThingStateDef(ThingDef):
 
 
 @define
+class MetaThing:
+    position: Vec2i
+    obid: int
+    parts: list[int] = attrs.Factory(list)
+
+
+@define
 class ThingTile:
     gid: int
     position: Vec2i
     obid: int
     parentobid: int = None
-    shapes: List[Rect2i] = []
+    shapes: list[Rect2i] = attrs.Factory(list)
+    damaged_offsets: list[int] = attrs.Factory(list)
 
     def get_collider(self):
         if len(self.shapes) > 0 and self.shapes[0]:
@@ -248,28 +256,8 @@ class ThingTile:
 
 
 class Things:
-    SINGLE_LIDS = {
-        0: (1, 2),
-        3: (1, 2),
-        6: (1, 2),
-        9: (1, 2),
-        12: (1, 2)
-    }
-    TALL_LIDS = {
-        32: (-15, 1),
-        34: (-15, 1),
-        36: (-15, 1),
-        38: (-15, 1),
-        40: (-15, 1),
-        42: (-15, 1)
-    }
-    OTHER_LIDS = {
-        28: (1),
-        44: (1),
-        46: (-1)
-    }
-
     def __init__(self):
+        self.meta_things = {}
         self.tiles = []
         self.thing_defs = {}
         self.thing_placements = []
@@ -278,11 +266,20 @@ class Things:
         # map ThingTile obids (src object) to placement tags
         self.obid_tag_map = {}
 
+    def add_meta_thing(self, obj: tiled_object.TiledObject):
+        mt = MetaThing(
+            position=Vec2i.new(obj.coordinates.x, obj.coordinates.y - 8),
+            obid=obj.id,
+        )
+        self.meta_things[obj.id] = mt
+
     def add_tile(self, obj: tiled_object.Tile, tile_tracker: TileTracker):
         tile = ThingTile.from_tile_obj(obj)
         source = tile_tracker.require_gid_source(obj.gid)
         tile.shapes = source.get_tile_collision_shapes(
             source.to_local_id(obj.gid))
+        tile.damaged_offsets = self.get_damaged_offset_sequence(tile.gid,
+                                                                tile_tracker)
         self.tiles.append(tile)
 
     def add_state_def(self, params: ThingStateParams) -> ThingStateDef:
@@ -297,160 +294,82 @@ class Things:
     def place(self,
               pos: Vec2i,
               td: ThingDef,
-              src_obj: tiled_object.Tile) -> int:
+              src_obid: int) -> int:
         tag = len(self.thing_placements)
         placem = ThingPlacement(pos.x, pos.y, tag, td)
         self.thing_placements.append(placem)
-        self.obid_tag_map[src_obj.obid] = tag
+        self.obid_tag_map[src_obid] = tag
         return tag
 
     def process(self, tile_tracker: TileTracker):
         for tile in self.tiles:
             if tile.parentobid:
-                self.unresolved_parents.append((tile.parentobid, tile.obid))
+                if tile.parentobid in self.meta_things:
+                    self.meta_things[tile.parentobid].parts.append(tile.obid)
+                else:
+                    self.unresolved_parents.append((tile.parentobid, tile.obid))
 
         # Collect required tiles
         for tile in self.tiles:
-            tile_tracker.obj.insert_gid(tile.gid)
-            source = tile_tracker.require_gid_source(tile.gid)
-            if source.tileset.image.name == "buildings.png":
-                loc = source.to_local_id(tile.gid)
-                self.prepare_building_tile(loc, tile, tile_tracker)
+            for damoff in tile.damaged_offsets:
+                if damoff is not None:
+                    tile_tracker.obj.insert_gid(tile.gid + damoff)
 
         # Build Defs and Placements
         for tile in self.tiles:
-            source = tile_tracker.require_gid_source(tile.gid)
-            if source.tileset.image.name == "buildings.png":
-                loc = source.to_local_id(tile.gid)
-                self.place_building_tile(loc, tile, tile_tracker)
+            self.place_tile(tile, tile_tracker)
 
-    def prepare_building_tile(self,
-                              loc: int,
-                              tile: ThingTile,
-                              tile_tracker: TileTracker):
-        if loc in self.SINGLE_LIDS:
-            # single-tile buildings
-            gid1, gid2 = tile.gid + 1, tile.gid + 2
-            tile_tracker.obj.insert_gid(gid1)
-            tile_tracker.obj.insert_gid(gid2)
-        elif loc in self.TALL_LIDS:
-            # tall (2 tile) buildings
-            d1, d2 = self.TALL_LIDS[loc]
-            gid1, gid2 = tile.gid + d1, tile.gid + d2
-            tile_tracker.obj.insert_gid(gid1)
-            tile_tracker.obj.insert_gid(gid2)
-        elif loc in self.OTHER_LIDS and tile.parentobid is None:
-            d1 = self.OTHER_LIDS[loc]
-            gid1 = tile.gid + d1
-            tile_tracker.obj.insert_gid(gid1)
-
-    def place_building_tile(self,
-                            loc: int,
-                            tile: ThingTile,
-                            tile_tracker: TileTracker):
-        if loc in self.SINGLE_LIDS:
-            # single-tile buildings
-            d1, d2 = self.SINGLE_LIDS[loc]
-            gid0, gid1, gid2 = tile.gid, tile.gid + d1, tile.gid + d2
-            oam_attr = gid_to_oam_attr(tile.gid)
-            dam2 = self.add_state_def(
-                ThingStateParams(
-                    drawable=DrawTileObj(
-                        tile_tracker.obj.gid_to_chr(gid2),
-                        oam_attr
-                    ),
-                    collider=CollideNone(),
-                )
-            )
-            dam1 = self.add_state_def(
-                ThingStateParams(
-                    drawable=DrawTileObj(
-                        tile_tracker.obj.gid_to_chr(gid1),
-                        oam_attr
-                    ),
-                    hits=Hits(2),
-                    ev_die=EvecDie(dam2)
-                )
-            )
-            td = self.add_state_def(
-                ThingStateParams(
-                    root=Root(True),
-                    drawable=DrawTileObj(
-                        tile_tracker.obj.gid_to_chr(gid0),
-                        oam_attr
-                    ),
-                    collider=tile.get_collider(),
-                    hits=Hits(1),
-                    ev_die=EvecDie(dam1)
-                )
-            )
-            self.place(tile.position, td, tile)
-        elif loc in self.TALL_LIDS:
-            # tall (2 tile) buildings
-            d1, d2 = self.TALL_LIDS[loc]
-            gid0, gid1, gid2 = tile.gid, tile.gid + d1, tile.gid + d2
-            basedam2 = self.add_state_def(
-                ThingStateParams(
-                    drawable=DrawTileObj(
-                        tile_tracker.obj.gid_to_chr(gid2),
-                        gid_to_oam_attr(gid2)
-                    ),
-                    collider=CollideNone(),
-                )
-            )
-            basedam1 = self.add_state_def(
-                ThingStateParams(
-                    drawable=DrawTileObj(
-                        tile_tracker.obj.gid_to_chr(gid1),
-                        gid_to_oam_attr(gid1)
-                    ),
-                    hits=Hits(2),
-                    ev_die=EvecDie(basedam2)
-                )
-            )
-            td = self.add_state_def(
-                ThingStateParams(
-                    root=Root(True),
-                    drawable=DrawTileObj(
-                        tile_tracker.obj.gid_to_chr(gid0),
-                        gid_to_oam_attr(gid0)
-                    ),
-                    collider=tile.get_collider(),
-                    hits=Hits(1),
-                    ev_die=EvecDie(basedam1)
-                )
-            )
-            self.place(tile.position, td, tile)
-        else:
-            if loc in self.OTHER_LIDS and tile.parentobid is None:
-                d1 = self.OTHER_LIDS[loc]
-                gid1 = tile.gid + d1
-                params1 = ThingStateParams(
-                    drawable=DrawTileObj(
-                        tile_tracker.obj.gid_to_chr(gid1),
-                        gid_to_oam_attr(gid1)
-                    ),
-                    collider=CollideNone()
-                )
+    def get_damaged_offset_sequence(self,
+                                    gid: int,
+                                    tile_tracker: TileTracker) -> List[int]:
+        source = tile_tracker.require_gid_source(gid)
+        lid = source.to_local_id(gid)
+        seq = [0]
+        damoff = 0
+        total_offset = 0
+        while damoff is not None:
+            damoff = source.get_tile_property(lid + total_offset,
+                                              "damaged_offset",
+                                              convert=int)
+            if damoff is None:
+                seq.append(None)
+                break
             else:
-                params1 = ThingStateParams(
-                    drawable=DrawNone(),
-                    collider=CollideNone()
-                )
-            dam1 = self.add_state_def(params1)
+                if damoff == 0:
+                    break
+                total_offset += damoff
+                seq.append(total_offset)
+        return seq
+
+    def place_tile(self, tile: ThingTile, tile_tracker: TileTracker):
+        td = None
+        for damoff in reversed(tile.damaged_offsets):
+            drawable = None
+            if damoff is None:
+                drawable = DrawNone()
+            else:
+                drawable = DrawTileObj(
+                            tile_tracker.obj.gid_to_chr(tile.gid + damoff),
+                            gid_to_oam_attr(tile.gid)
+                        )
+            collider = None
+            hits = Hits(2)
+            if damoff == 0:
+                collider = tile.get_collider()
+                hits = Hits(1)
+            elif td is None:
+                collider = CollideNone()
+                hits = None
             td = self.add_state_def(
                 ThingStateParams(
-                    root=Root(True),
-                    drawable=DrawTileObj(
-                        tile_tracker.obj.gid_to_chr(tile.gid),
-                        gid_to_oam_attr(tile.gid)
-                    ),
-                    collider=tile.get_collider(),
-                    hits=Hits(1),
-                    ev_die=EvecDie(dam1)
+                    root=Root(True) if damoff == 0 else None,
+                    drawable=drawable,
+                    collider=collider,
+                    hits=hits,
+                    ev_die=EvecDie(td) if td else None
                 )
             )
-            self.place(tile.position, td, tile)
+        self.place(tile.position, td, tile.obid)
 
     def get_subthing_pairs(self) -> List[Tuple[int, int]]:
         """
@@ -459,10 +378,18 @@ class Things:
         """
         pairs: List[Tuple[int, int]] = []
         for parentobid, childobid in self.unresolved_parents:
-            parent_tag = self.obid_tag_map.get(parentobid, None)
-            child_tag = self.obid_tag_map.get(childobid, None)
-            pairs.append((parent_tag, child_tag))
+            if parentobid in self.obid_tag_map:
+                parent_tag = self.obid_tag_map[parentobid]
+                child_tag = self.obid_tag_map.get(childobid, None)
+                pairs.append((parent_tag, child_tag))
         return pairs
+
+    def get_meta_things(self) -> List[Tuple[MetaThing, List[int]]]:
+        groups = []
+        for mt in self.meta_things.values():
+            tags = [self.obid_tag_map[obid] for obid in mt.parts]
+            groups.append((mt, tags))
+        return groups
 
     def get_defs_asm(self) -> [str]:
         if len(self.thing_defs) == 0:

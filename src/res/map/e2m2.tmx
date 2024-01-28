@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="20" height="18" tilewidth="8" tileheight="8" infinite="0" nextlayerid="5" nextobjectid="15">
+<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="20" height="18" tilewidth="8" tileheight="8" infinite="0" nextlayerid="6" nextobjectid="17">
  <tileset firstgid="1" source="terrain.tsx"/>
  <tileset firstgid="129" source="warships.tsx"/>
+ <tileset firstgid="145" source="warships/patrol.tsx"/>
  <layer id="1" name="bg" class="bg" width="20" height="18">
   <data encoding="csv">
 128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,
@@ -25,19 +26,21 @@
 </data>
  </layer>
  <objectgroup id="3" name="things">
-  <object id="2" name="patrol1" gid="143" x="126" y="107" width="8" height="8"/>
-  <object id="3" name="patrol0" gid="142" x="118" y="107" width="8" height="8"/>
-  <object id="4" name="cruiser0" gid="132" x="64" y="103" width="8" height="8"/>
-  <object id="5" name="cruiser1" gid="133" x="72" y="103" width="8" height="8"/>
-  <object id="6" name="cruiser2" gid="134" x="80" y="103" width="8" height="8"/>
-  <object id="7" name="cruiser3" gid="134" x="88" y="103" width="8" height="8"/>
-  <object id="8" name="cruiser4" gid="135" x="96" y="103" width="8" height="8"/>
-  <object id="9" name="sub0" gid="139" x="43" y="128" width="8" height="8"/>
-  <object id="10" name="sub1" gid="140" x="51" y="128" width="8" height="8"/>
-  <object id="11" name="sub2" gid="141" x="59" y="128" width="8" height="8"/>
-  <object id="12" name="destroyer0" gid="136" x="134" y="97" width="8" height="8"/>
-  <object id="13" name="destroyer1" gid="137" x="142" y="97" width="8" height="8"/>
-  <object id="14" name="destroyer2" gid="138" x="150" y="97" width="8" height="8"/>
+  <object id="2" name="patrol1" type="ThingTile" gid="143" x="126" y="107" width="8" height="8"/>
+  <object id="3" name="patrol0" type="ThingTile" gid="142" x="118" y="107" width="8" height="8"/>
+  <object id="4" name="cruiser0" type="ThingTile" gid="132" x="64" y="103" width="8" height="8"/>
+  <object id="5" name="cruiser1" type="ThingTile" gid="133" x="72" y="103" width="8" height="8"/>
+  <object id="6" name="cruiser2" type="ThingTile" gid="134" x="80" y="103" width="8" height="8"/>
+  <object id="7" name="cruiser3" type="ThingTile" gid="134" x="88" y="103" width="8" height="8"/>
+  <object id="8" name="cruiser4" type="ThingTile" gid="135" x="96" y="103" width="8" height="8"/>
+  <object id="9" name="sub0" type="ThingTile" gid="139" x="43" y="128" width="8" height="8"/>
+  <object id="10" name="sub1" type="ThingTile" gid="140" x="51" y="128" width="8" height="8"/>
+  <object id="11" name="sub2" type="ThingTile" gid="141" x="59" y="128" width="8" height="8"/>
+  <object id="12" name="destroyer0" type="ThingTile" gid="136" x="134" y="97" width="8" height="8"/>
+  <object id="13" name="destroyer1" type="ThingTile" gid="137" x="142" y="97" width="8" height="8"/>
+  <object id="14" name="destroyer2" type="ThingTile" gid="138" x="150" y="97" width="8" height="8"/>
+  <object id="15" type="ThingPart" gid="145" x="139" y="81" width="8" height="8"/>
+  <object id="16" type="ThingPart" gid="146" x="147" y="81" width="8" height="8"/>
  </objectgroup>
  <layer id="4" name="tilethings" width="20" height="18" visible="0">
   <data encoding="csv">

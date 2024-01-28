@@ -193,12 +193,12 @@ class MapConvert:
             builder.append_chunk_text("\n".join(things_lines))
 
         # Rules
-        multithings = {}
+        subthings = {}
         for parent, child in self.things.get_subthing_pairs():
-            if parent not in multithings:
-                multithings[parent] = []
-            multithings[parent].append(child)
-        for parent, children in multithings.items():
+            if parent not in subthings:
+                subthings[parent] = []
+            subthings[parent].append(child)
+        for parent, children in subthings.items():
             rule_data_len = len(children) + 1
             assert rule_data_len < 256
             rule_type = 0

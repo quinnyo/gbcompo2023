@@ -5,6 +5,9 @@
  </properties>
  <image source="buildings.png" width="128" height="24"/>
  <tile id="0">
+  <properties>
+   <property name="damaged_offset" type="int" value="1"/>
+  </properties>
   <objectgroup draworder="index" id="2">
    <object id="1" type="CollisionShape" x="2" y="1" width="5" height="7"/>
   </objectgroup>
@@ -15,11 +18,22 @@
   </animation>
  </tile>
  <tile id="1">
+  <properties>
+   <property name="damaged_offset" type="int" value="1"/>
+  </properties>
   <objectgroup draworder="index" id="2">
    <object id="1" type="CollisionShape" x="1" y="3" width="7" height="5"/>
   </objectgroup>
  </tile>
+ <tile id="2">
+  <properties>
+   <property name="damaged_offset" type="int" value="0"/>
+  </properties>
+ </tile>
  <tile id="3">
+  <properties>
+   <property name="damaged_offset" type="int" value="1"/>
+  </properties>
   <objectgroup draworder="index" id="2">
    <object id="1" type="CollisionShape" x="1" y="0" width="7" height="8"/>
   </objectgroup>
@@ -30,11 +44,22 @@
   </animation>
  </tile>
  <tile id="4">
+  <properties>
+   <property name="damaged_offset" type="int" value="1"/>
+  </properties>
   <objectgroup draworder="index" id="2">
    <object id="1" type="CollisionShape" x="0" y="3" width="8" height="5"/>
   </objectgroup>
  </tile>
+ <tile id="5">
+  <properties>
+   <property name="damaged_offset" type="int" value="0"/>
+  </properties>
+ </tile>
  <tile id="6">
+  <properties>
+   <property name="damaged_offset" type="int" value="1"/>
+  </properties>
   <objectgroup draworder="index" id="2">
    <object id="1" type="CollisionShape" x="0" y="1" width="8" height="7"/>
   </objectgroup>
@@ -45,11 +70,22 @@
   </animation>
  </tile>
  <tile id="7">
+  <properties>
+   <property name="damaged_offset" type="int" value="1"/>
+  </properties>
   <objectgroup draworder="index" id="2">
    <object id="1" type="CollisionShape" x="0" y="3" width="8" height="5"/>
   </objectgroup>
  </tile>
+ <tile id="8">
+  <properties>
+   <property name="damaged_offset" type="int" value="0"/>
+  </properties>
+ </tile>
  <tile id="9">
+  <properties>
+   <property name="damaged_offset" type="int" value="1"/>
+  </properties>
   <objectgroup draworder="index" id="2">
    <object id="1" type="CollisionShape" x="0" y="1" width="8" height="7"/>
   </objectgroup>
@@ -60,11 +96,22 @@
   </animation>
  </tile>
  <tile id="10">
+  <properties>
+   <property name="damaged_offset" type="int" value="1"/>
+  </properties>
   <objectgroup draworder="index" id="2">
    <object id="1" type="CollisionShape" x="0" y="2" width="8" height="6"/>
   </objectgroup>
  </tile>
+ <tile id="11">
+  <properties>
+   <property name="damaged_offset" type="int" value="0"/>
+  </properties>
+ </tile>
  <tile id="12">
+  <properties>
+   <property name="damaged_offset" type="int" value="1"/>
+  </properties>
   <objectgroup draworder="index" id="2">
    <object id="1" type="CollisionShape" x="0" y="1" width="7" height="7"/>
   </objectgroup>
@@ -75,9 +122,17 @@
   </animation>
  </tile>
  <tile id="13">
+  <properties>
+   <property name="damaged_offset" type="int" value="1"/>
+  </properties>
   <objectgroup draworder="index" id="2">
    <object id="1" type="CollisionShape" x="0" y="3" width="8" height="5"/>
   </objectgroup>
+ </tile>
+ <tile id="14">
+  <properties>
+   <property name="damaged_offset" type="int" value="0"/>
+  </properties>
  </tile>
  <tile id="16">
   <objectgroup draworder="index" id="2">
@@ -89,6 +144,9 @@
   </animation>
  </tile>
  <tile id="17">
+  <properties>
+   <property name="damaged_offset" type="int" value="16"/>
+  </properties>
   <objectgroup draworder="index" id="2">
    <object id="1" type="CollisionShape" x="0" y="1" width="7" height="7"/>
   </objectgroup>
@@ -104,6 +162,9 @@
   </animation>
  </tile>
  <tile id="19">
+  <properties>
+   <property name="damaged_offset" type="int" value="16"/>
+  </properties>
   <objectgroup draworder="index" id="2">
    <object id="1" type="CollisionShape" x="1" y="1" width="6" height="7"/>
   </objectgroup>
@@ -119,6 +180,9 @@
   </animation>
  </tile>
  <tile id="21">
+  <properties>
+   <property name="damaged_offset" type="int" value="16"/>
+  </properties>
   <objectgroup draworder="index" id="2">
    <object id="1" type="CollisionShape" x="1" y="1" width="7" height="7"/>
   </objectgroup>
@@ -129,6 +193,9 @@
   </objectgroup>
  </tile>
  <tile id="23">
+  <properties>
+   <property name="damaged_offset" type="int" value="16"/>
+  </properties>
   <objectgroup draworder="index" id="2">
    <object id="1" type="CollisionShape" x="0" y="0" width="8" height="8"/>
   </objectgroup>
@@ -139,6 +206,9 @@
   </objectgroup>
  </tile>
  <tile id="25">
+  <properties>
+   <property name="damaged_offset" type="int" value="16"/>
+  </properties>
   <objectgroup draworder="index" id="2">
    <object id="1" type="CollisionShape" x="0" y="2" width="8" height="6"/>
   </objectgroup>
@@ -149,21 +219,38 @@
   </objectgroup>
  </tile>
  <tile id="27">
+  <properties>
+   <property name="damaged_offset" type="int" value="16"/>
+  </properties>
   <objectgroup draworder="index" id="2">
    <object id="1" type="CollisionShape" x="1" y="2" width="6" height="6"/>
   </objectgroup>
  </tile>
  <tile id="28">
+  <properties>
+   <property name="damaged_offset" type="int" value="1"/>
+  </properties>
   <objectgroup draworder="index" id="2">
    <object id="1" type="CollisionShape" x="1" y="1" width="6" height="7"/>
   </objectgroup>
  </tile>
+ <tile id="29">
+  <properties>
+   <property name="damaged_offset" type="int" value="0"/>
+  </properties>
+ </tile>
  <tile id="30">
+  <properties>
+   <property name="damaged_offset" type="int" value="-1"/>
+  </properties>
   <objectgroup draworder="index" id="2">
    <object id="2" type="CollisionShape" x="1" y="1" width="6" height="7"/>
   </objectgroup>
  </tile>
  <tile id="32">
+  <properties>
+   <property name="damaged_offset" type="int" value="-15"/>
+  </properties>
   <objectgroup draworder="index" id="2">
    <object id="1" type="CollisionShape" x="0" y="0" width="7" height="8"/>
   </objectgroup>
@@ -173,7 +260,15 @@
    <frame tileid="33" duration="500"/>
   </animation>
  </tile>
+ <tile id="33">
+  <properties>
+   <property name="damaged_offset" type="int" value="0"/>
+  </properties>
+ </tile>
  <tile id="34">
+  <properties>
+   <property name="damaged_offset" type="int" value="-15"/>
+  </properties>
   <objectgroup draworder="index" id="2">
    <object id="1" type="CollisionShape" x="1" y="0" width="6" height="8"/>
   </objectgroup>
@@ -183,7 +278,15 @@
    <frame tileid="35" duration="500"/>
   </animation>
  </tile>
+ <tile id="35">
+  <properties>
+   <property name="damaged_offset" type="int" value="0"/>
+  </properties>
+ </tile>
  <tile id="36">
+  <properties>
+   <property name="damaged_offset" type="int" value="-15"/>
+  </properties>
   <objectgroup draworder="index" id="2">
    <object id="1" type="CollisionShape" x="1" y="0" width="6" height="8"/>
   </objectgroup>
@@ -193,27 +296,67 @@
    <frame tileid="37" duration="500"/>
   </animation>
  </tile>
+ <tile id="37">
+  <properties>
+   <property name="damaged_offset" type="int" value="0"/>
+  </properties>
+ </tile>
  <tile id="38">
+  <properties>
+   <property name="damaged_offset" type="int" value="-15"/>
+  </properties>
   <objectgroup draworder="index" id="2">
    <object id="1" type="CollisionShape" x="1" y="0" width="7" height="8"/>
   </objectgroup>
  </tile>
+ <tile id="39">
+  <properties>
+   <property name="damaged_offset" type="int" value="0"/>
+  </properties>
+ </tile>
  <tile id="40">
+  <properties>
+   <property name="damaged_offset" type="int" value="-15"/>
+  </properties>
   <objectgroup draworder="index" id="2">
    <object id="1" type="CollisionShape" x="0" y="0" width="8" height="8"/>
   </objectgroup>
+ </tile>
+ <tile id="41">
+  <properties>
+   <property name="damaged_offset" type="int" value="0"/>
+  </properties>
  </tile>
  <tile id="42">
+  <properties>
+   <property name="damaged_offset" type="int" value="-15"/>
+  </properties>
   <objectgroup draworder="index" id="2">
    <object id="1" type="CollisionShape" x="0" y="0" width="8" height="8"/>
   </objectgroup>
  </tile>
+ <tile id="43">
+  <properties>
+   <property name="damaged_offset" type="int" value="0"/>
+  </properties>
+ </tile>
  <tile id="44">
+  <properties>
+   <property name="damaged_offset" type="int" value="1"/>
+  </properties>
   <objectgroup draworder="index" id="2">
    <object id="1" type="CollisionShape" x="1" y="1" width="6" height="7"/>
   </objectgroup>
  </tile>
+ <tile id="45">
+  <properties>
+   <property name="damaged_offset" type="int" value="0"/>
+  </properties>
+ </tile>
  <tile id="46">
+  <properties>
+   <property name="damaged_offset" type="int" value="-1"/>
+  </properties>
   <objectgroup draworder="index" id="2">
    <object id="1" type="CollisionShape" x="1" y="1" width="6" height="7"/>
   </objectgroup>

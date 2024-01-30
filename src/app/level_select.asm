@@ -98,8 +98,6 @@ LevelSelect.main_iter::
 	jr z, :+
 	ld a, d
 	ld [wSettings.level], a
-	ld hl, snd_ui_move
-	call sound_play
 	call LevelSelect_refresh0
 	call LevelSelect_refresh1
 	call LevelSelect_refresh2

@@ -8,18 +8,11 @@ section "Sounds", romx
 ***********************************************************/
 
 snd_ui_move::
-	ScPart CH2, 2, :+
-	ScReg rNR21, $80 | 16
-	ScReg rNR22, $A1
-	ScReg rNR23, low(E06)
-	ScReg rNR24, high(E06) | $C0
-	ScEnd
-:
-	ScPart CH2, 5
+	ScPart CH2, 1
 	ScReg rNR21, $80 | 16
 	ScReg rNR22, $81
-	ScReg rNR23, low(F06)
-	ScReg rNR24, high(F06) | $C0
+	ScReg rNR23, low(Fs7)
+	ScReg rNR24, high(Fs7) | $C0
 	ScEnd
 
 snd_ui_nav_enter::
@@ -187,4 +180,6 @@ snd_smash_04::
 /***********************************************************
 *                                              Sound Table *
 ***********************************************************/
+
+section "SoundTable", rom0
 	SoundTableEnd sound_table_size::, sound_table::

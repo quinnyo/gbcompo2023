@@ -5,7 +5,7 @@ section "SoundTest", rom0
 
 ; @mut: AF, BC, DE, HL, ROMB
 SoundTest_init::
-	ld a, bank(TileData)
+	PushRomb bank(TileData)
 	rst rom_sel
 	ld de, TileData
 	ld hl, $8800
@@ -29,6 +29,8 @@ SoundTest_init::
 	ld a, h
 	cp $9C ; end = $9C00
 	jr nz, .patternloop
+
+	PopRomb
 
 	xor a
 	ld [wSelection], a

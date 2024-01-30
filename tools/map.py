@@ -25,7 +25,7 @@ def main():
 
     tmx = pytiled_parser.parse_map(args.infile)
     map_data = MapConvert()
-    map_data.process_tmx(tmx, args)
+    map_data.process_tmx(tmx, args.bg_tile_offset, args.bg_tile_default)
     asm = map_data.write_asm(args)
 
     if args.out:

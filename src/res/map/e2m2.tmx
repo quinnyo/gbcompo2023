@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="20" height="18" tilewidth="8" tileheight="8" infinite="0" nextlayerid="6" nextobjectid="28">
+<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="20" height="18" tilewidth="8" tileheight="8" infinite="0" nextlayerid="6" nextobjectid="30">
  <tileset firstgid="1" source="terrain.tsx"/>
- <tileset firstgid="145" source="warships/patrol.tsx"/>
- <tileset firstgid="149" source="warships/cruiser.tsx"/>
- <tileset firstgid="164" source="warships/submarine.tsx"/>
+ <tileset firstgid="129" source="warships/patrol.tsx"/>
+ <tileset firstgid="135" source="warships/cruiser.tsx"/>
+ <tileset firstgid="150" source="warships/submarine.tsx"/>
  <layer id="1" name="bg" class="bg" width="20" height="18">
   <data encoding="csv">
 128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,
@@ -27,12 +27,12 @@
 </data>
  </layer>
  <objectgroup draworder="index" id="3" name="things">
-  <object id="15" name="patrol0" type="ThingTile" gid="145" x="96" y="89" width="8" height="8">
+  <object id="28" name="patrol0" type="ThingTile" gid="129" x="96" y="89" width="8" height="8">
    <properties>
     <property name="parent" type="object" value="17"/>
    </properties>
   </object>
-  <object id="16" name="patrol1" type="ThingTile" gid="146" x="104" y="89" width="8" height="8">
+  <object id="29" name="patrol1" type="ThingTile" gid="130" x="104" y="89" width="8" height="8">
    <properties>
     <property name="parent" type="object" value="17"/>
    </properties>
@@ -40,27 +40,27 @@
   <object id="17" name="patrol" type="MetaThing" x="104" y="88">
    <point/>
   </object>
-  <object id="20" name="cruiser0" type="ThingTile" gid="149" x="112" y="106" width="8" height="8">
+  <object id="20" name="cruiser0" type="ThingTile" gid="135" x="112" y="106" width="8" height="8">
    <properties>
     <property name="parent" type="object" value="18"/>
    </properties>
   </object>
-  <object id="21" name="cruiser1" type="ThingTile" gid="150" x="120" y="106" width="8" height="8">
+  <object id="21" name="cruiser1" type="ThingTile" gid="136" x="120" y="106" width="8" height="8">
    <properties>
     <property name="parent" type="object" value="18"/>
    </properties>
   </object>
-  <object id="22" name="cruiser2" type="ThingTile" gid="151" x="128" y="106" width="8" height="8">
+  <object id="22" name="cruiser2" type="ThingTile" gid="137" x="128" y="106" width="8" height="8">
    <properties>
     <property name="parent" type="object" value="18"/>
    </properties>
   </object>
-  <object id="23" name="cruiser3" type="ThingTile" gid="152" x="136" y="106" width="8" height="8">
+  <object id="23" name="cruiser3" type="ThingTile" gid="138" x="136" y="106" width="8" height="8">
    <properties>
     <property name="parent" type="object" value="18"/>
    </properties>
   </object>
-  <object id="24" name="cruiser4" type="ThingTile" gid="153" x="144" y="106" width="8" height="8">
+  <object id="24" name="cruiser4" type="ThingTile" gid="139" x="144" y="106" width="8" height="8">
    <properties>
     <property name="parent" type="object" value="18"/>
    </properties>
@@ -68,17 +68,17 @@
   <object id="18" name="cruiser" type="MetaThing" x="132" y="105">
    <point/>
   </object>
-  <object id="25" name="sub0" type="ThingTile" gid="164" x="43" y="128" width="8" height="8">
+  <object id="25" name="sub0" type="ThingTile" gid="150" x="43" y="128" width="8" height="8">
    <properties>
     <property name="parent" type="object" value="19"/>
    </properties>
   </object>
-  <object id="26" name="sub1" type="ThingTile" gid="165" x="51" y="128" width="8" height="8">
+  <object id="26" name="sub1" type="ThingTile" gid="151" x="51" y="128" width="8" height="8">
    <properties>
     <property name="parent" type="object" value="19"/>
    </properties>
   </object>
-  <object id="27" name="sub2" type="ThingTile" gid="166" x="59" y="128" width="8" height="8">
+  <object id="27" name="sub2" type="ThingTile" gid="152" x="59" y="128" width="8" height="8">
    <properties>
     <property name="parent" type="object" value="19"/>
    </properties>

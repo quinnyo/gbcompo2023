@@ -141,10 +141,10 @@ class MapTileset:
 
 
 class TileTracker:
-    def __init__(self, args):
+    def __init__(self, bg_tile_offset: int = 128, bg_tile_default: int = 0):
         self.sources: [TileSource] = []
-        self.bg: MapTileset = MapTileset(args.bg_tile_offset,
-                                         args.bg_tile_default)
+        self.bg: MapTileset = MapTileset(bg_tile_offset,
+                                         bg_tile_default)
         self.obj: MapTileset = MapTileset()
 
     def gid_to_chr_bg(self, gid: int) -> int:

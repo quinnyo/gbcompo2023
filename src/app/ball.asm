@@ -689,7 +689,7 @@ Ball_draw::
 	ld b, a
 	ld a, [wBall.y + 1]
 	ld c, a
-	call Sprite_draw
+	call Sprite_draw_parts
 	call oam_next_store
 .end
 	PopRomb

@@ -312,7 +312,7 @@ endr
 	ld a, [hl+]
 	ld d, a
 	call oam_next_recall
-	call Sprite_draw
+	call Sprite_draw_parts
 	jr .draw_end
 .draw_mode_oam
 	ld a, [hl+]

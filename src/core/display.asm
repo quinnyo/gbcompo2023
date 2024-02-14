@@ -4,11 +4,6 @@ include "common.inc"
 
 
 section "Display", rom0
-
-Display_init::
-	ret
-
-
 ; Disable the LCD (waits for vblank)
 ; @mut: AF
 Display_lcd_off::

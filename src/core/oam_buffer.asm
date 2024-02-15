@@ -7,27 +7,44 @@ SECTION "OAMBufferState", WRAM0, ALIGN[8]
 wOAMBuffer:: ds OAM_BUFFER_SIZE
 
 ; Points to next unused OAM entry
-wNext: dw
-
+wOAM_end:: dw
 
 SECTION "OAM setup", ROM0
 ; Store HL as next available OAM entry address
 ; @mut: A
 oam_next_store::
 	ld a, l
-	ld [wNext], a
+	ld [wOAM_end + 0], a
 	ld a, h
-	ld [wNext + 1], a
+	ld [wOAM_end + 1], a
 	ret
 
 ; Load (previously stored) next available OAM entry address into HL
 ; @ret HL: the 'Next' pointer.
 ; @mut: A
 oam_next_recall::
-	ld a, [wNext]
+	ld hl, wOAM_end
+	ld a, [hl+]
+	ld h, [hl]
 	ld l, a
-	ld a, [wNext + 1]
-	ld h, a
+	ret
+
+; Check if the 'next' pointer (wOAM_end) is valid.
+; (valid = within bounds && aligned to entry[0])
+; @return F.Z: address is valid
+; @mut: AF
+oam_next_ok::
+	ld a, [wOAM_end + 1]
+	cp high(wOAMBuffer)
+	ret nz
+	ld a, [wOAM_end + 0]
+	cp OAM_BUFFER_SIZE
+	jr c, :+
+	; overrun
+	or 1 ; clear F.Z
+	ret
+:
+	and 3 ; F.Z if end % 4 == 0
 	ret
 
 ; Clear OAM buffer, reset the 'Next' pointer.

@@ -79,7 +79,7 @@ Effects_draw_flicker_out:
 	ld a, [hl+] ; sprite.1
 	ld d, a
 	call oam_next_recall
-	call Sprite_draw
+	call Sprite_draw_parts
 	call oam_next_store
 	PopRomb
 	ret

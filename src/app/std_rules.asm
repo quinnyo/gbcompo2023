@@ -45,7 +45,7 @@ def MULTITHING_SCRATCH_STATUS0  rb 1
 def MULTITHING_SCRATCH_STATUS1  rb 1
 assert _RS < RULES_SCRATCH_BUFFER_SIZE
 
-; Share any multithing member's hit events/damage with other members.
+; Share any multithing member's destruction/damage with other members.
 ; All members receive any (OR) event flags + the lowest (AND) hits value.
 ; @param C: dataLen
 ; @param DE: &data -- a list of member thing tags.
@@ -87,7 +87,7 @@ rule_multithing::
 	; mask & combine collected status values
 	ld hl, wRulesScratch + MULTITHING_SCRATCH_STATUS0
 	ld a, [hl]
-	and fThingStatus_EV
+	and fThingStatus_EV_DIE
 	ld b, a
 	ld [hl+], a
 	ld a, [hl]

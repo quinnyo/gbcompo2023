@@ -413,8 +413,9 @@ default_font: incbin "res/onebit-mono.1bpp", 0, ONEBIT_MONO_RES_SIZE
 	ShrimpIncbin "res/ballder_rolling.2bpp"
 	ShrimpIncbin "res/map/buildings.2bpp"
 	ShrimpIncbin "res/map/terrain.2bpp"
-	ShrimpIncbin "res/map/warships.2bpp"
 	ShrimpIncbin "res/map/warships/patrol.2bpp"
+	ShrimpIncbin "res/map/warships/cruiser.2bpp"
+	ShrimpIncbin "res/map/warships/submarine.2bpp"
 	ShrimpIncbin "res/ball_pile.2bpp"
 
 

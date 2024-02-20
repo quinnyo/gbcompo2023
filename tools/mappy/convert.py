@@ -33,7 +33,7 @@ CLASS_HEIGHTMAP_CONTOUR = "heightmap_contour"
 
 
 class MapConvert:
-    def process_tmx(self, tmx: TiledMap, args):
+    def process_tmx(self, tmx: TiledMap, bg_tile_offset: int = 128, bg_tile_default: int = 0):
         print(tmx.map_file)
         self.tee_x = 0
         self.tee_y = 0
@@ -44,7 +44,7 @@ class MapConvert:
         self.tilemap = []
         self.heightmap_contour = []
         self.heightmap = []
-        self.tile_tracker: TileTracker = TileTracker(args)
+        self.tile_tracker: TileTracker = TileTracker(bg_tile_offset, bg_tile_default)
         self.things: Things = Things()
 
         for y in range(self.rows):

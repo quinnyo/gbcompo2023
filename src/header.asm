@@ -111,24 +111,10 @@ Reset::
 
 	ld sp, $FFFE
 
-	call audio_init
+	call core_init
+	call app_init
 	call audio_on
-	call Display_init
-	call Display_lcd_off
-	call oam_init
-	call input_init
-	call loado_init
-	call gfx_init
-	call gfx_load_default_font
-	call gfx_load_default_palettes
-	call Texto_init
-	call settings_init
-	call CourseScores_init
-	call Save_init
-	call savewhip_fetch
-	call world_init
-	call Mode_init
-
+	call Mode_do_init
 	call Display_lcd_on
 
 	; enable interrupts
@@ -150,7 +136,7 @@ MainLoop:
 	and PADF_A | PADF_B | PADF_SELECT | PADF_START
 	xor PADF_A | PADF_B | PADF_SELECT | PADF_START
 	jr z, Reset
-	call Mode_main_iter
+	call Mode_do_main_iter
 
 	; Skip first HALT -- if already in VBLANK, don't want to wait for another one?
 	jr .vblank_wait_entry
@@ -185,10 +171,10 @@ Main_mode_change::
 	call oam_clear
 	ld d, 0
 	call gfx_bg_attr_fill
-	; set standard fade in before Mode_init (so mode can override it)
+	; set standard fade in before Mode_do_init (so mode can override it)
 	ld a, 1
 	call gfx_fade_in
-	call Mode_init
+	call Mode_do_init
 
 	reti
 
@@ -197,6 +183,32 @@ wait_vblank::
 	ldh a, [rLY]
 	cp SCRN_Y
 	jr c, wait_vblank
+	ret
+
+
+; Initialise core systems
+core_init:
+	call Display_lcd_off
+	call audio_init
+	call oam_init
+	call input_init
+	call loado_init
+	call gfx_init
+	call gfx_load_default_font
+	call gfx_load_default_palettes
+	call Texto_init
+	call Sprite_init
+	call Chrly_init
+	ret
+
+
+; Initialise app systems
+app_init:
+	call settings_init
+	call CourseScores_init
+	call Save_init
+	call savewhip_fetch
+	call world_init
 	ret
 
 
@@ -233,7 +245,7 @@ endc
 
 
 ; Jump to the `init` routine of the current mode
-Mode_init::
+Mode_do_init:
 	ld a, [wMode.current]
 	add a
 	rst jump_switch
@@ -243,7 +255,7 @@ Mode_init::
 
 
 ; Jump to the `main_iter` routine of the current mode
-Mode_main_iter::
+Mode_do_main_iter:
 	ld a, [wMode.current]
 	add a
 	rst jump_switch

@@ -46,13 +46,77 @@ Sprite_init::
 ; @mut: AF, DE, HL
 Sprite_draw::
 	ld d, high(wSprites)
+
+	; FALLTHROUGH
+
+; Draw sprite from somewhere
+; @param B,C: X,Y position (sprite origin)
+; @param DE: Sprite address
+; @mut: AF, DE, HL
+Sprite_draw_direct::
+	call oam_next_ok
+	ret nz
 	PushWramb bank(wSprites)
-	call oam_next_recall
 :
-	call _draw_sprite_obj
+	; read command code
+	ld a, [de]
+	inc de
+	call _switch_part_code
+	ld a, e
+	and d
+	cp $FF ; if DE == $FFFF: SPRITE_END
 	jr nz, :-
 	PopWramb
-	jp oam_next_store
+	ret
+
+
+_switch_part_code:
+	cp SPRITE_END
+	jr z, _draw_part_end
+	cp SPRITE_PART_OBJ
+	jr z, _draw_part_obj
+
+	ld b, b
+	rst panic
+
+
+; @return DE: $FFFF
+; @mut: DE
+_draw_part_end:
+	ld de, $FFFF
+	ret
+
+
+; @param B,C: X,Y position (sprite origin)
+; @param DE: Address of sprite part data
+; @return DE: address of next part
+; @mut: AF, DE, HL
+_draw_part_obj:
+	ld hl, wOAM_end
+	ld a, [hl+]
+	ld h, [hl]
+	ld l, a
+
+	ld a, [de] ; Y
+	inc de
+	add c
+	ld [hl+], a
+	ld a, [de] ; X
+	inc de
+	add b
+	ld [hl+], a
+	ld a, [de] ; TILE
+	inc de
+	ld [hl+], a
+	ld a, [de] ; ATTR
+	inc de
+	ld [hl+], a
+
+	ld a, l
+	ld [wOAM_end + 0], a
+	ld a, h
+	ld [wOAM_end + 1], a
+	ret
 
 
 ; Draw sprite parts repeatedly until reaching a `SPRITE_PARTS_END`.
@@ -139,7 +203,7 @@ SpriteBuilder_end::
 	ld h, a
 
 	; add sprite terminator
-	ld a, SPRITE_PARTS_END
+	ld a, SPRITE_END
 	ld [hl+], a
 
 	; update sprite buffer
@@ -177,6 +241,8 @@ SpriteBuilder_add_obj::
 	ld a, [wBuilder.sprite_end + 1]
 	ld h, a
 
+	ld a, SPRITE_PART_OBJ
+	ld [hl+], a
 	ld a, b
 	ld [hl+], a
 	ld a, c
@@ -205,6 +271,8 @@ SpriteBuilder_add_obj_mem::
 	ld a, [wBuilder.sprite_end + 1]
 	ld h, a
 
+	ld a, SPRITE_PART_OBJ
+	ld [hl+], a
 	ld a, [de] :: inc de
 	ld [hl+], a ; Y
 	ld a, [de] :: inc de

@@ -5,11 +5,21 @@ Multi-part sprite thingers...
 
 SPRITE PARTS
 A sprite part is essentially a single OAM object
+
+It's confusing that there seems to be two types of "Sprite".
+Have fun!
 ***********************************************************/
 if !def(CORE_SPRITE_INC)
 def CORE_SPRITE_INC equ 1
 
 include "hardware.inc"
+
+
+rsreset
+; Marks the end of the sprite. All sprites must include `SPRITE_END`.
+def SPRITE_END      rb 1
+; Draw one OAM-style CHR object.
+def SPRITE_PART_OBJ rb 1
 
 
 ; Mark the end of the sprite definition.

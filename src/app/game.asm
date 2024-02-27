@@ -2,12 +2,10 @@ include "common.inc"
 include "app/ball.inc"
 include "app/shotctl.inc"
 
-def bStatusUpdate    equ 0 ; status needs update
 def bStatusClear     equ 5 ; stage cleared
 def bStatusPaused    equ 6 ; game paused
 def bStatusFailed    equ 7 ; game over
 
-def fStatusUpdate    equ 1 << bStatusUpdate
 def fStatusClear     equ 1 << bStatusClear
 def fStatusPaused    equ 1 << bStatusPaused
 def fStatusFailed    equ 1 << bStatusFailed
@@ -29,17 +27,11 @@ Game::
 	ld [wMsgBoxWidth], a
 	ld [wMsgBoxHeight], a
 
-	ld a, fStatusUpdate
-	ld [wGame.status], a
-
 	ld hl, wMsgBoxBuffer
 	ld bc, MSG_BOX_BUFFER_SIZE
-	ld d, 0
+	ld d, " "
 	call mem_fill
-	ld hl, wStatusLine
-	ld bc, STATUS_BUFFER_SIZE
-	ld d, 0
-	call mem_fill
+	call StatusBar_init
 
 	call gfx_load_game_obj
 	call gfx_load_bg_tiles
@@ -89,12 +81,7 @@ Game::
 .main_iter::
 	call _Game_update
 	call BallPile_draw
-.do_status_update
-	; update status line
-	ld a, [wGame.status]
-	bit bStatusUpdate, a
-	call nz, status_update
-
+	call StatusBar_update
 	ret
 
 
@@ -116,7 +103,7 @@ _Game_on_shot_phase_changed:
 
 	; show status line
 	call build_status_stats
-	call status_update
+	call StatusBar_sync
 	ret
 
 
@@ -182,6 +169,7 @@ _Game_update:
 	ld a, [wGame.status]
 	set bStatusClear, a
 	ld [wGame.status], a
+	call StatusBar_hide
 .things_done
 	call things_draw
 	call Ball_draw
@@ -210,25 +198,21 @@ _Game_update_stage_cleared:
 	ld a, [wSettings.level]
 	inc a
 	ld [wSettings.level], a
-	ld a, ModeLevelSelect
-	jp Main_mode_change
-	ret
+	jr _Game_exit
 
 
 ; @param B: input state (pressed)
 _Game_update_game_over:
 	bit PADB_A, b
 	ret z ; wait till A pressed
-	ld a, ModeLevelSelect
-	jp Main_mode_change
+	jr _Game_exit
 
 
 ; @param B: input state (pressed)
 _Game_update_paused:
 	bit PADB_SELECT, b
 	jr z, :+
-	ld a, ModeLevelSelect
-	jp Main_mode_change
+	jr _Game_exit
 :
 
 	bit PADB_START, b
@@ -245,6 +229,12 @@ _Game_update_timers:
 	ld hl, wGame.tick2
 	inc [hl]
 	ret
+
+
+_Game_exit:
+	call StatusBar_init ; make sure status bar is gone
+	ld a, ModeLevelSelect
+	jp Main_mode_change
 
 
 ; trigger thing smashed effects
@@ -281,7 +271,7 @@ pause_toggle:
 
 	ld de, sStatusPaused
 	ld bc, sStatusPaused_len
-	call status_set_text
+	call StatusBar_set_text
 	ret
 
 
@@ -290,24 +280,6 @@ macro PutChar
 	ld a, \1
 	ld [hl+], a
 endm
-
-
-; Set status bar content
-; @param DE: string
-; @param BC: string length
-status_set_text:
-	ld hl, wStatusLine
-	call mem_copy
-
-	ld d, " "
-	ld bc, wStatusLine + STATUS_LINE_LEN
-	call mem_fill_to
-
-	ld a, [wGame.status]
-	set bStatusUpdate, a
-	ld [wGame.status], a
-
-	ret
 
 
 build_status_stats:
@@ -326,32 +298,7 @@ build_status_stats:
 	ld d, " "
 	ld bc, wStatusLine + STATUS_LINE_LEN
 	call mem_fill_to
-
-	ld a, [wGame.status]
-	set bStatusUpdate, a
-	ld [wGame.status], a
-
-	ret
-
-
-; show status line
-; @mut: AF, BC, DE, HL
-status_update:
-	ld a, [wGame.status]
-	res bStatusUpdate, a
-	ld [wGame.status], a
-
-	ld hl, STATUS_ORIGIN
-	ld de, wStatusLine
-	ld bc, STATUS_LINE_LEN
-	call vmem_copy
-
-	ld a, SCRN_Y - 8
-	ldh [rWY], a
-	ld a, 7
-	ldh [rWX], a
-
-	ret
+	jp StatusBar_show
 
 
 ; @param DE: message
@@ -507,11 +454,6 @@ def MSG_BOX_MAX_WIDTH equ MSG_MAX_WIDTH + 2
 def MSG_BOX_MAX_HEIGHT equ MSG_MAX_LINES + 2
 def MSG_BOX_BUFFER_SIZE equ MSG_BOX_MAX_WIDTH * MSG_BOX_MAX_HEIGHT
 
-def STATUS_LINE_LEN equ 32
-def STATUS_LINE_COUNT equ 1
-def STATUS_BUFFER_SIZE equ STATUS_LINE_LEN * STATUS_LINE_COUNT
-def STATUS_ORIGIN equ $9C00
-
 macro StrThing
 	def \1_str equs \2
 	def \1_len equ charlen(\2)
@@ -534,12 +476,6 @@ wMsgBoxY: db
 wMsgBoxWidth: db
 wMsgBoxHeight: db
 wMsgBoxBuffer: ds MSG_BOX_BUFFER_SIZE
-
-; Status bar content buffer
-wStatusLine:
-for i, STATUS_LINE_COUNT
-	.line{u:i} ds STATUS_LINE_LEN
-endr
 
 
 section "wStats", wram0

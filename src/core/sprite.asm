@@ -50,7 +50,7 @@ Sprite_draw::
 	; FALLTHROUGH
 
 ; Draw sprite from somewhere
-; @param B,C: X,Y position (sprite origin)
+; @param B,C: Y,X position (sprite origin)
 ; @param DE: Sprite address
 ; @mut: AF, DE, HL
 Sprite_draw_direct::
@@ -87,7 +87,7 @@ _draw_part_end:
 	ret
 
 
-; @param B,C: X,Y position (sprite origin)
+; @param B,C: Y,X position (sprite origin)
 ; @param DE: Address of sprite part data
 ; @return DE: address of next part
 ; @mut: AF, DE, HL
@@ -99,11 +99,11 @@ _draw_part_obj:
 
 	ld a, [de] ; Y
 	inc de
-	add c
+	add b
 	ld [hl+], a
 	ld a, [de] ; X
 	inc de
-	add b
+	add c
 	ld [hl+], a
 	ld a, [de] ; TILE
 	inc de
